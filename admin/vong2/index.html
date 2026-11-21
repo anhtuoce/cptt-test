@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <link rel="icon" href="data:,">
+    <meta charset="UTF-8">
+    <title>Olympia Admin - Vòng 2</title>
+    
+    <style>
+        /* CHỈNH FULL MÀN HÌNH */
+        html, body { height: 100%; margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: sans-serif; background: #eef2f7; padding: 15px; color: #333; display: flex; flex-direction: column; }
+        .dashboard { width: 100%; max-width: 100%; margin: auto; position: relative; display: flex; flex-direction: column; flex: 1; }
+        
+        #loading-overlay { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0, 51, 102, 0.95); color: #ffd700; padding: 12px 25px; border-radius: 30px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 5px 15px rgba(0,0,0,0.4); border: 2px solid #56ccf2; z-index: 9999; display: none; align-items: center; gap: 15px; }
+        .spinner { border: 4px solid rgba(255,255,255,0.2); border-top: 4px solid #ffd700; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* CUSTOM POPUP STYLES */
+        #custom-popup-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(5px); animation: fadeIn 0.2s ease; }
+        .custom-popup-box { background:#fff; border-radius:12px; padding:30px; width:450px; max-width:90%; box-shadow:0 15px 35px rgba(0,0,0,0.4); text-align:center; border-top: 5px solid #007bff; animation: slideDown 0.3s ease; }
+        .custom-popup-box h3 { margin-top:0; color:#003366; font-size: 1.5rem; text-transform: uppercase; margin-bottom: 15px; }
+        .custom-popup-box p { font-size:1.15rem; color:#444; margin-bottom:25px; line-height:1.5; }
+        .custom-popup-btn-container { display:flex; justify-content:center; gap:15px; }
+        .custom-popup-btn { padding:10px 25px; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:1.1rem; transition: 0.2s; }
+        #custom-popup-btn-cancel { background:#6c757d; color:#fff; display:none; }
+        #custom-popup-btn-cancel:hover { background:#5a6268; }
+        #custom-popup-btn-ok { background:#007bff; color:#fff; }
+        #custom-popup-btn-ok:hover { background:#0056b3; }
+        
+        /* POPUP XEM ĐÁP ÁN (DÀN HÀNG NGANG) */
+        #review-popup-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(5px); animation: fadeIn 0.2s ease; }
+        .review-box { background: #fff; padding: 25px; border-radius: 12px; width: 95%; max-width: 1400px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); border-top: 5px solid #ff416c; position: relative; max-height: 90vh; overflow-y: auto;}
+        .review-box-title { color: #ff416c; text-align: center; margin-top: 0; font-size: 1.8rem; text-transform: uppercase; }
+        .review-container { display: flex; flex-direction: row; gap: 20px; justify-content: space-around; flex-wrap: wrap; margin-top: 20px;}
+        .review-card { flex: 1; min-width: 250px; border: 2px solid #ddd; padding: 15px; border-radius: 10px; background: #f8f9fa; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+        .review-card h4 { margin: 0 0 15px 0; color: #003366; font-size: 1.4rem; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; text-transform: uppercase; }
+        .review-close-btn { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; background: transparent; border: none; font-weight: bold; color: #dc3545; cursor: pointer; transition: 0.2s; }
+        .review-close-btn:hover { transform: scale(1.2); }
+
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+
+        .header-panel { background: #003366; color: white; padding: 15px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 15px; position: relative; }
+        .header-panel h1 { margin: 0; font-size: 2rem; letter-spacing: 1px; position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none;}
+        .btn-prev-round { background: #007bff; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 1.2rem; transition: 0.3s; display: inline-flex; align-items: center; box-shadow: 0 4px 10px rgba(0,123,255,0.3); text-transform: uppercase; letter-spacing: 1px; border: none; cursor: pointer; position: relative; z-index: 2; font-family: inherit;}
+        .btn-prev-round:hover { background: #0056b3; transform: translateY(-2px); color: white; box-shadow: 0 6px 15px rgba(0,123,255,0.5);}
+        .btn-next-round { background: #28a745; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 1.2rem; transition: 0.3s; display: inline-flex; align-items: center; box-shadow: 0 4px 10px rgba(40,167,69,0.3); text-transform: uppercase; letter-spacing: 1px; border: none; cursor: pointer; font-family: inherit; position: relative; z-index: 2;}
+        .btn-next-round:hover { background: #218838; transform: translateY(-2px); color: white; box-shadow: 0 6px 15px rgba(40,167,69,0.5);}
+        
+        .action-panel { display: flex; justify-content: space-between; margin-bottom: 15px;}
+        .main-grid { display: grid; grid-template-columns: 5fr 3fr 4fr; gap: 20px; flex: 1; min-height: 0; }
+        .panel { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
+        .panel h3 { margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid #eef2f7; }
+        
+        /* BẢNG ĐIỂM */
+        #team-list-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; overflow-y: auto; }
+        .team-card { border: 2px solid #007bff; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; gap: 15px; background: #ffffff; box-shadow: 0 2px 8px rgba(0,123,255,0.1); transition: 0.3s; }
+        .team-header { display: flex; justify-content: space-between; align-items: center; }
+        .team-name { font-size: 1.2rem; font-weight: bold; color: #003366; }
+        .team-score { font-size: 2.2rem; font-weight: bold; color: #003366; }
+        .ans-box { border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; background: #fdfdfd; display: flex; flex-direction: column; justify-content: space-between;}
+        .time-text { color: #28a745; font-size: 0.95rem; font-weight: bold; }
+        .score-ctrl { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .btn-add, .btn-sub { flex: 1; height: 40px; display: flex; justify-content: center; align-items: center; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1.5rem; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn-sub { background: #dc3545; }
+        .btn-sub:hover { background: #c82333; transform: scale(1.02); }
+        .btn-add { background: #28a745; }
+        .btn-add:hover { background: #218838; transform: scale(1.02); }
+        .score-input { width: 50px; height: 40px; text-align: center; font-size: 1.1rem; font-weight: bold; border: 1px solid #ccc; border-radius: 6px; outline: none; box-sizing: border-box; color: #003366; }
+        .score-input:focus { border-color: #007bff; box-shadow: 0 0 5px rgba(0,123,255,0.5); }
+        
+        /* HIỆU ỨNG LOẠI BỎ ĐỘI */
+        .team-eliminated { filter: grayscale(100%); opacity: 0.4; pointer-events: none; }
+        .team-eliminated .team-header button { pointer-events: auto; }
+        .btn-loai { background: #6c757d; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 0.8rem; cursor: pointer; margin-left: 10px; font-weight: bold; transition: 0.2s; }
+        .btn-loai:hover { filter: brightness(0.9); }
+
+        /* LẬT MẢNH GHÉP */
+        .puzzle-ctrl-container { display: flex; flex-direction: column; gap: 15px; flex: 1; }
+        .puzzle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; flex: 1; }
+        .p-btn { background: #007bff; color: white; border: none; font-size: 2rem; font-weight: bold; border-radius: 12px; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,123,255,0.3); min-height: 100px; }
+        .p-btn:hover { background: #0056b3; }
+        .p-btn.opened { background: #28a745; opacity: 0.5; box-shadow: none; }
+        .p-center-btn { background: #dc3545; color: white; border: none; font-size: 1.8rem; font-weight: bold; border-radius: 12px; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 10px rgba(220,53,69,0.3); padding: 20px; text-transform: uppercase; width: 100%; }
+        .p-center-btn:hover { background: #c82333; }
+        .p-center-btn.opened { background: #28a745; opacity: 0.5; box-shadow: none;}
+        
+        /* CÂU HỎI VÀ LÀM MỜ */
+        .q-scroll { overflow-y: auto; flex: 1; padding-right: 5px; }
+        .q-item { padding: 12px; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 8px; background: #f8f9fa; transition: 0.3s;}
+        .btn-show { background: #003366; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 5px; margin-top: 10px; font-weight: bold;}
+        .btn-blur { background: #6c757d; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 5px; margin-top: 10px; margin-left: 5px; font-weight: bold; transition: 0.2s;}
+        .btn-blur:hover { background: #5a6268; }
+        .btn-review { background: #ffc107; color: #000; border: none; padding: 8px 15px; cursor: pointer; border-radius: 5px; margin-top: 10px; margin-left: 5px; font-weight: bold; transition: 0.2s;}
+        .btn-review:hover { background: #e0a800; }
+        
+        .blurred { opacity: 0.4 !important; filter: grayscale(100%); pointer-events: none; }
+        .q-item.blurred .btn-blur { pointer-events: auto; background: #343a40; }
+    </style>
+</head>
+<body>
+
+    <div id="custom-popup-overlay">
+        <div class="custom-popup-box">
+            <h3 id="custom-popup-title">THÔNG BÁO</h3>
+            <p id="custom-popup-msg"></p>
+            <div class="custom-popup-btn-container">
+                <button class="custom-popup-btn" id="custom-popup-btn-cancel">HỦY</button>
+                <button class="custom-popup-btn" id="custom-popup-btn-ok">ĐỒNG Ý</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP XEM LẠI ĐÁP ÁN (Không có nút XÁC NHẬN CỘNG) -->
+    <div id="review-popup-overlay">
+        <div class="review-box">
+            <button class="review-close-btn" onclick="closeReviewPopup()">✖</button>
+            <h3 class="review-box-title" id="review-title">XEM LẠI ĐÁP ÁN</h3>
+            <div class="review-container" id="review-popup-content"></div>
+        </div>
+    </div>
+
+    <div id="loading-overlay"><div class="spinner"></div><span id="loading-text">Đang xử lý...</span></div>
+
+    <div class="dashboard">
+        <div class="header-panel">
+            <button onclick="goToRound1()" class="btn-prev-round">◀ VỀ LẠI VÒNG 1</button>
+            <h1>BẢNG ĐIỀU KHIỂN MC - VÒNG 2</h1>
+            <button onclick="goToRound3()" class="btn-next-round">CHUYỂN VÒNG 3 ▶</button>
+        </div>
+        
+        <div class="action-panel">
+             <div>
+                <button onclick="window.location.reload()" style="padding:10px; background:#28a745; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer; margin-right:10px;">🔄 TẢI LẠI TRANG</button>
+                <button onclick="closeQuestionV2()" style="padding:10px; background:#dc3545; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer; margin-right:10px;">ĐÓNG CÂU HỎI & RESET GIỜ</button>
+                <button onclick="resetBlurAll()" style="padding:10px; background:#ffc107; color:#000; border:none; border-radius:5px; font-weight:bold; cursor:pointer; margin-right:10px;">XÓA TOÀN BỘ MẢNH MỜ (TẠO TRẬN MỚI)</button>
+                <button id="btn-show-ans-v2" onclick="toggleShowAnswerV2()" style="padding:10px; background:#17a2b8; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer;">👁 HIỆN ĐÁP ÁN KHÁN GIẢ</button>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel"><h3>Đáp án & Điểm số</h3><div id="team-list-container">Đang tải...</div></div>
+            <div class="panel">
+                <h3>Lật Mảnh Ghép / Hiện Chữ</h3>
+                <div class="puzzle-ctrl-container">
+                    <div class="puzzle-grid">
+                        <button class="p-btn" id="btn-p1" onclick="togglePiece('p1')">Ô 1</button>
+                        <button class="p-btn" id="btn-p2" onclick="togglePiece('p2')">Ô 2</button>
+                        <button class="p-btn" id="btn-p3" onclick="togglePiece('p3')">Ô 3</button>
+                        <button class="p-btn" id="btn-p4" onclick="togglePiece('p4')">Ô 4</button>
+                    </div>
+                    <button class="p-center-btn" id="btn-p5" onclick="togglePiece('p5')">TRUNG TÂM</button>
+                </div>
+            </div>
+            <div class="panel"><h3>Phát Câu hỏi (Tự nhảy 30s)</h3><div class="q-scroll" id="question-list">Đang tải...</div></div>
+        </div>
+    </div>
+
+    <script>
+        const API_VONG2_CFG = "../../api/vong2.json";
+        let FB_VONG2 = "";   // .../vong2
+        let FB_DIEMSO = "";  // .../diemso (cùng database)
+
+        async function initFirebaseConfig() {
+            const cfg = await (await fetch(API_VONG2_CFG + "?_t=" + Date.now())).json();
+            FB_VONG2 = cfg.api_url.replace(/\.json$/, "");
+            FB_DIEMSO = FB_VONG2.replace(/\/vong2$/, "") + "/diemso";
+        }
+
+        // Firebase trả về mảng nếu khóa là 1,2,3... nên đổi về object cho đồng nhất
+        function fbToObj(x) {
+            if (Array.isArray(x)) {
+                const o = {};
+                x.forEach((v, i) => { if (v !== null && v !== undefined) o[i] = v; });
+                return o;
+            }
+            return x || {};
+        }
+
+        async function fbSend(method, path, body) {
+            const res = await fetch(`${FB_VONG2}${path}.json`, {
+                method: method,
+                body: body === undefined ? undefined : JSON.stringify(body)
+            });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.json();
+        }
+        const fbPatchState = (obj) => fbSend("PATCH", "/trangThai", obj);
+
+                // === HÀM HIỂN THỊ CUSTOM POPUP (THAY THẾ ALERT/CONFIRM) ===
+                function showCustomAlert(msg, title="THÔNG BÁO") {
+                    return new Promise(resolve => {
+                        document.getElementById('custom-popup-title').innerHTML = title;
+                        document.getElementById('custom-popup-msg').innerHTML = msg;
+                        document.getElementById('custom-popup-btn-cancel').style.display = 'none';
+                        document.getElementById('custom-popup-overlay').style.display = 'flex';
+                        
+                        let btnOk = document.getElementById('custom-popup-btn-ok');
+                        btnOk.onclick = function() {
+                            document.getElementById('custom-popup-overlay').style.display = 'none';
+                            resolve();
+                        }
+                    });
+                }
+
+        function showCustomConfirm(msg, title="XÁC NHẬN") {
+            return new Promise(resolve => {
+                document.getElementById('custom-popup-title').innerHTML = title;
+                document.getElementById('custom-popup-msg').innerHTML = msg;
+                document.getElementById('custom-popup-btn-cancel').style.display = 'inline-block';
+                document.getElementById('custom-popup-overlay').style.display = 'flex';
+                
+                let btnOk = document.getElementById('custom-popup-btn-ok');
+                let btnCancel = document.getElementById('custom-popup-btn-cancel');
+                
+                btnOk.onclick = function() {
+                    document.getElementById('custom-popup-overlay').style.display = 'none';
+                    resolve(true);
+                }
+                btnCancel.onclick = function() {
+                    document.getElementById('custom-popup-overlay').style.display = 'none';
+                    resolve(false);
+                }
+            });
+        }
+
+        // === BIẾN LOCAL THEO DÕI ĐỘI BỊ LOẠI ===
+        let eliminatedTeamsLocal = [];
+
+        function toggleEliminateTeam(idx) {
+            let el = document.getElementById(`team_row_${idx}`);
+            let btn = document.getElementById(`btn_loai_${idx}`);
+            
+            if(eliminatedTeamsLocal.includes(idx)) {
+                eliminatedTeamsLocal = eliminatedTeamsLocal.filter(i => i !== idx);
+                el.classList.remove('team-eliminated');
+                if(btn) { btn.innerText = "LOẠI ĐỘI"; btn.style.background = "#6c757d"; }
+            } else {
+                eliminatedTeamsLocal.push(idx);
+                el.classList.add('team-eliminated');
+                if(btn) { btn.innerText = "KHÔI PHỤC"; btn.style.background = "#28a745"; }
+            }
+        }
+
+        // ==========================================
+        // CÁC BIẾN GLOBAL MySQL
+        // ==========================================
+        window.mysqlScoresAdmin = {};
+        window.teamMapping = {};
+        window.teamList = []; 
+        
+        let serverBlurredPieces = []; 
+        let globalCauHoiV2 = {};
+        let currentSubmits = {};
+        let globalTrangThai = {};
+
+        // ==========================================
+        // KHỞI TẠO BẢN ĐỒ VÀ DANH SÁCH ĐỘI TỪ API CHONDOI (MYSQL)
+        // ==========================================
+        async function initTeamMapping() {
+            try {
+                const res = await fetch(`${FB_DIEMSO}.json?_t=${Date.now()}`);
+                const data = (await res.json()) || {};
+                window.teamMapping = {};
+                window.teamList = [];
+                Object.keys(data).forEach(dbCol => {
+                    // Tên đội dùng làm khóa trong submittedAnswers = olympia_team của thí sinh
+                    window.teamMapping[dbCol] = dbCol;
+                    window.teamList.push(dbCol);
+                });
+            } catch (e) {
+                console.error("Lỗi khởi tạo danh sách đội:", e);
+            }
+        }
+
+        // ==========================================
+        // LIÊN TỤC LẤY ĐIỂM TỪ API DIEMSO (MYSQL)
+        // ==========================================
+        async function fetchMySQLScores() {
+            try {
+                const res = await fetch(`${FB_DIEMSO}.json?_t=${Date.now()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data) {
+                        let updatedScores = {};
+                        for (let teamName in window.teamMapping) {
+                            let dbCol = window.teamMapping[teamName];
+                            if (data[dbCol] !== undefined && data[dbCol] !== null) {
+                                updatedScores[teamName] = data[dbCol];
+                            }
+                        }
+                        window.mysqlScoresAdmin = updatedScores;
+
+                        for (let i = 0; i < window.teamList.length; i++) {
+                            let scoreEl = document.getElementById(`score_${i}`);
+                            let teamNameEl = document.getElementById(`team_name_${i}`);
+                            if (scoreEl && teamNameEl) {
+                                let tName = teamNameEl.innerText.trim();
+                                if (window.mysqlScoresAdmin[tName] !== undefined) {
+                                    scoreEl.innerText = window.mysqlScoresAdmin[tName];
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Lỗi lấy điểm Firebase:", e);
+            } finally {
+                setTimeout(fetchMySQLScores, 1500);
+            }
+        }
+
+        // ==========================================
+        // LIÊN TỤC LẤY CÂU HỎI VÀ ĐÁP ÁN (API PHP NỘI BỘ)
+        // ==========================================
+        async function fetchSheetData() {
+            try {
+                const res = await fetch(`${FB_VONG2}.json?_t=${Date.now()}`);
+                const db = (await res.json()) || {};
+
+                const dsch = fbToObj(db.danhSachCauHoi);
+                const subs = fbToObj(db.submittedAnswers);
+                Object.keys(dsch).forEach(k => {
+                    const s = fbToObj(subs[k]);
+                    dsch[k].dananthisinh = Object.keys(s)
+                        .map(t => `[${t}|${s[t].answer}|${s[t].time}]`).join('-');
+                });
+                const data = {
+                    status: "success",
+                    danhSachCauHoi: dsch,
+                    trangThai: db.trangThai || {},
+                    submittedAnswers: subs
+                };
+                
+                if (data.status === "success") {
+                    globalTrangThai = data.trangThai || {};
+                    currentSubmits = data.submittedAnswers || {};
+                    globalCauHoiV2 = data.danhSachCauHoi || {};
+
+                    // Cập nhật trạng thái hiển thị đáp án
+                    let btnShowAns = document.getElementById('btn-show-ans-v2');
+                    if (globalTrangThai.showAnswer === true || globalTrangThai.showAnswer === "true") {
+                        btnShowAns.innerText = "🚫 ẨN ĐÁP ÁN KHÁN GIẢ";
+                        btnShowAns.style.background = "#6c757d"; 
+                    } else {
+                        btnShowAns.innerText = "👁 HIỆN ĐÁP ÁN KHÁN GIẢ";
+                        btnShowAns.style.background = "#17a2b8"; 
+                    }
+
+                    // Cập nhật mảng mảnh mờ
+                    if (globalTrangThai.blurredPieces !== undefined) {
+                        serverBlurredPieces = globalTrangThai.blurredPieces ? globalTrangThai.blurredPieces.toString().split(',').filter(x => x !== "") : [];
+                    }
+
+                    // Cập nhật giao diện nút bấm Mảnh ghép
+                    ['1','2','3','4'].forEach(num => {
+                        let el = document.getElementById('btn-p' + num);
+                        if (el) {
+                            el.className = (globalTrangThai['manh'+num] === true || globalTrangThai['manh'+num] === "true") ? "p-btn opened" : "p-btn";
+                            if (serverBlurredPieces.includes(num)) el.classList.add('blurred');
+                        }
+                    });
+                    
+                    let p5El = document.getElementById('btn-p5');
+                    if (p5El) {
+                        p5El.className = (globalTrangThai.manh5 === true || globalTrangThai.manh5 === "true") ? "p-center-btn opened" : "p-center-btn";
+                        if (serverBlurredPieces.includes('5') || serverBlurredPieces.includes('CNV') || serverBlurredPieces.includes('TRUNGTAM')) {
+                            p5El.classList.add('blurred');
+                        }
+                    }
+
+                    // Cập nhật mờ câu hỏi
+                    ['1','2','3','4','5'].forEach(id => {
+                        let el = document.getElementById(`q_item_${id}`);
+                        if (el) {
+                            if (serverBlurredPieces.includes(id) || (id === '5' && (serverBlurredPieces.includes('CNV')||serverBlurredPieces.includes('TRUNGTAM')))) {
+                                el.classList.add('blurred');
+                                let btn = el.querySelector('.btn-blur');
+                                if(btn) btn.innerText = "Bỏ làm mờ";
+                            } else {
+                                el.classList.remove('blurred');
+                                let btn = el.querySelector('.btn-blur');
+                                if(btn) btn.innerText = "Làm mờ mảnh";
+                            }
+                        }
+                    });
+
+                    renderAdminUI();
+                }
+            } catch (error) {
+                console.error("Lỗi fetch API Vong 2:", error);
+            } finally {
+                setTimeout(fetchSheetData, 2000); 
+            }
+        }
+
+        // ==========================================
+        // RENDER UI CHÍNH
+        // ==========================================
+        function renderAdminUI() {
+            const teamListContainer = document.getElementById('team-list-container');
+            if (teamListContainer.innerHTML === "Đang tải...") teamListContainer.innerHTML = "";
+
+            window.teamList.forEach((t, idx) => {
+                let dbCol = window.teamMapping[t] || "";
+                let s = window.mysqlScoresAdmin[t] !== undefined ? window.mysqlScoresAdmin[t] : 0;
+                
+                let ans = "...";
+                let displayTime = "⏱ --";
+                let correctAns = "...";
+
+                if (globalTrangThai.cauHoiHienTai && globalTrangThai.cauHoiHienTai !== "") {
+                    let currentQ = globalTrangThai.cauHoiHienTai;
+                    
+                    let qData = null;
+                    if (Array.isArray(globalCauHoiV2)) qData = globalCauHoiV2.find(q => q && q.id && q.id.toString() === currentQ);
+                    else qData = globalCauHoiV2[currentQ];
+
+                    if (qData) {
+                        correctAns = qData.dapAn || "...";
+                        
+                        // Lọc đáp án của đội hiện tại từ chuỗi dananthisinh trong CSDL
+                        let rawAns = qData.dananthisinh || "";
+                        if (rawAns && rawAns.includes(`[${t}|`)) {
+                            let parts = rawAns.split('-');
+                            parts.forEach(p => {
+                                let match = p.match(/\[(.*?)\|(.*?)\|(.*?)\]/);
+                                if (match && match[1] === t) {
+                                    ans = match[2];
+                                    displayTime = `⏱ ${match[3]}`;
+                                }
+                            });
+                        }
+                    }
+                }
+                
+                let rowEl = document.getElementById(`team_row_${idx}`);
+                if(!rowEl) {
+                    let newRow = document.createElement('div');
+                    newRow.className = 'team-card';
+                    newRow.id = `team_row_${idx}`;
+                    
+                    // Khung đội 1 -> ĐA Chuẩn -> ĐA Đội
+                    newRow.innerHTML = `<div class="team-header">
+                            <div style="display:flex; align-items:center;">
+                                <span class="team-name" id="team_name_${idx}">${t}</span>
+                                <button id="btn_loai_${idx}" class="btn-loai" onclick="toggleEliminateTeam(${idx})">LOẠI ĐỘI</button>
+                            </div>
+                            <span id="score_${idx}" class="team-score">${s}</span>
+                        </div>
+                        <div class="ans-box" id="ans_box_${idx}">
+                            <div style="font-size: 0.95rem; color: #28a745; font-weight: bold; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px; margin-bottom: 5px; text-align: left;">ĐA đúng: <span style="color:#333;">${correctAns}</span></div>
+                            <div style="font-size: 0.95rem; color: #dc3545; font-weight: bold; text-align: left; padding-bottom: 5px;">ĐA đội: <span id="ans_${idx}" style="font-size: 1.3rem; color: #dc3545;">${ans}</span></div>
+                            <div id="time_${idx}" class="time-text" style="text-align: right;">${displayTime}</div>
+                        </div>
+                        <div class="score-ctrl"><button class="btn-sub" onclick="changeScore('${t}', '${dbCol}', 'inp_${idx}', -1, 'score_${idx}')">-</button><input type="number" id="inp_${idx}" value="10" step="10" class="score-input" onclick="this.select()"><button class="btn-add" onclick="changeScore('${t}', '${dbCol}', 'inp_${idx}', 1, 'score_${idx}')">+</button></div>`;
+                    teamListContainer.appendChild(newRow);
+                } else {
+                    document.getElementById(`score_${idx}`).innerText = s; 
+                    
+                    // Cập nhật lại HTML của box đáp án để dữ liệu chạy realtime
+                    let ansBox = document.getElementById(`ans_box_${idx}`);
+                    if(ansBox) {
+                        ansBox.innerHTML = `
+                            <div style="font-size: 0.95rem; color: #28a745; font-weight: bold; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px; margin-bottom: 5px; text-align: left;">ĐA đúng: <span style="color:#333;">${correctAns}</span></div>
+                            <div style="font-size: 0.95rem; color: #dc3545; font-weight: bold; text-align: left; padding-bottom: 5px;">ĐA đội: <span id="ans_${idx}" style="font-size: 1.3rem; color: #dc3545;">${ans}</span></div>
+                            <div id="time_${idx}" class="time-text" style="text-align: right;">${displayTime}</div>
+                        `;
+                    }
+                    
+                    let btnLoai = document.getElementById(`btn_loai_${idx}`);
+                    if(eliminatedTeamsLocal.includes(idx)) {
+                        rowEl.classList.add('team-eliminated');
+                        if(btnLoai) { btnLoai.innerText = "KHÔI PHỤC"; btnLoai.style.background = "#28a745"; }
+                    } else {
+                        rowEl.classList.remove('team-eliminated');
+                        if(btnLoai) { btnLoai.innerText = "LOẠI ĐỘI"; btnLoai.style.background = "#6c757d"; }
+                    }
+                }
+            });
+
+            // Render Questions List
+            const qList = document.getElementById('question-list');
+            let qHtml = "";
+            for (let i = 1; i <= 5; i++) {
+                let id = i.toString();
+                
+                let qData = null;
+                if (Array.isArray(globalCauHoiV2)) {
+                    qData = globalCauHoiV2.find(q => q && q.id && q.id.toString() === id);
+                } else {
+                    qData = globalCauHoiV2[id];
+                }
+                
+                if(!qData) continue;
+
+                let len = qData.soKyTu || qData.SoKyTu || "0"; 
+                let txt = qData.noiDung || qData.NoiDung || ""; 
+                let ans = qData.dapAn || qData.DapAn || "";
+                
+                let bg = (id === String(globalTrangThai.cauHoiHienTai)) ? "background:#e6f7ff; border-color:#007bff;" : "";
+                let label = (id === "5") ? `Câu Trung Tâm` : `Hàng ${id}`;
+                let isBlurred = serverBlurredPieces.includes(id);
+                
+                qHtml += `<div class="q-item ${isBlurred ? 'blurred':''}" id="q_item_${id}" style="${bg}">
+                        <b>${label} (${len} ký tự):</b> ${txt}<br><span style="color:green; font-weight:bold;">ĐA chuẩn: ${ans}</span><br>
+                        <button class="btn-show" onclick="playQuestionV2('${id}')">Phát 30s</button>
+                        <button class="btn-blur" onclick="toggleBlurPiece('${id}')">${isBlurred ? 'Bỏ làm mờ' : 'Làm mờ mảnh'}</button>
+                        <button class="btn-review" onclick="reviewAnswers('${id}')">Xem lại đáp án</button>
+                    </div>`;
+            }
+            if (qList.innerHTML !== qHtml) {
+                qList.innerHTML = qHtml;
+            }
+        }
+
+        // ==========================================
+        // CÁC HÀM XỬ LÝ POPUP XEM LẠI ĐÁP ÁN (DÀN HÀNG NGANG)
+        // ==========================================
+        function closeReviewPopup() {
+            document.getElementById('review-popup-overlay').style.display = 'none';
+        }
+
+        function reviewAnswers(id) {
+            let qData = null;
+            if (Array.isArray(globalCauHoiV2)) qData = globalCauHoiV2.find(q => q && q.id && q.id.toString() === id);
+            else qData = globalCauHoiV2[id];
+            
+            if (!qData) return;
+            
+            document.getElementById('review-title').innerHTML = `XEM LẠI ĐÁP ÁN - HÀNG ${id} <br><span style="font-size:1.3rem; color:#444; font-weight:normal;">ĐA CHUẨN: <b>${qData.dapAn}</b></span>`;
+            
+            // Xử lý chuỗi dananthisinh: Format: [Đội 1|ABC|2.4s]-[Đội 2|XYZ|3.1s]
+            let rawAns = qData.dananthisinh || "";
+            let parsedAnswers = {};
+            
+            if (rawAns) {
+                let parts = rawAns.split('-');
+                parts.forEach(p => {
+                    let match = p.match(/\[(.*?)\|(.*?)\|(.*?)\]/);
+                    if (match) {
+                        parsedAnswers[match[1]] = { ans: match[2], time: match[3] };
+                    }
+                });
+            }
+            
+            let html = '';
+            window.teamList.forEach((team, idx) => {
+                let teamData = parsedAnswers[team] || { ans: "Chưa có", time: "--" };
+                let currentScore = window.mysqlScoresAdmin[team] || 0;
+                
+                let ansColor = teamData.ans === "Chưa có" ? "#6c757d" : "#0056b3";
+                
+                // Hiển thị Điểm Trước và Tính điểm Dự Kiến, KHÔNG CÓ NÚT XÁC NHẬN
+                html += `<div class="review-card">
+                    <h4>${team}</h4>
+                    <div style="font-size:1.5rem; font-weight:bold; color:${ansColor}; min-height: 30px;">${teamData.ans}</div>
+                    <div style="color:#28a745; margin: 10px 0 15px 0; font-weight:bold;">⏱ ${teamData.time}</div>
+                    <hr style="border: 1px solid #ddd; margin-bottom:15px;">
+                    
+                    <div style="margin-bottom:10px; font-size:1.2rem; color:#444;">Điểm hiện tại: <b>${currentScore}</b></div>
+                    <div style="margin-bottom:15px; display:flex; justify-content:center; align-items:center; gap:8px; font-size:1.2rem; color:#444;">
+                        Cộng: <input type="number" id="rev_inp_${idx}" value="10" step="10" oninput="updateExpectedScore(${idx}, ${currentScore})" style="width:70px; text-align:center; padding:5px; border-radius:6px; border:1px solid #007bff; font-weight:bold; font-size:1.2rem;">
+                    </div>
+                    <div style="margin-bottom:10px; font-size:1.3rem; color:#dc3545; font-weight:bold;">Dự kiến: <span id="rev_expected_${idx}">${currentScore + 10}</span></div>
+                </div>`;
+            });
+            
+            document.getElementById('review-popup-content').innerHTML = html;
+            document.getElementById('review-popup-overlay').style.display = 'flex';
+        }
+        
+        function updateExpectedScore(idx, currentScore) {
+            let val = parseInt(document.getElementById(`rev_inp_${idx}`).value) || 0;
+            document.getElementById(`rev_expected_${idx}`).innerText = currentScore + val;
+        }
+
+        // ==========================================
+        // CÁC HÀM XỬ LÝ SỰ KIỆN GỌI LÊN API PHP VÒNG 2
+        // ==========================================
+        async function toggleShowAnswerV2() {
+            showLoading("Đang xử lý trạng thái đáp án...");
+            try {
+                let action = (globalTrangThai.showAnswer === true || globalTrangThai.showAnswer === "true") ? "hideAnswer" : "showAnswer";
+                await fbPatchState({ showAnswer: action === "showAnswer" });
+            } catch (e) {}
+            hideLoading();
+        }
+
+        async function closeQuestionV2() {
+            let isConfirm = await showCustomConfirm("XÁC NHẬN:<br>Bạn có chắc chắn muốn <b>ĐÓNG</b> câu hỏi hiện tại và reset đồng hồ?");
+            if (!isConfirm) return;
+
+            showLoading("Đang đóng câu hỏi...");
+            try {
+                await fbPatchState({ cauHoiHienTai: "" });
+            } catch (e) {}
+            hideLoading();
+        }
+
+        async function playQuestionV2(id) {
+            showLoading("Đang gửi câu hỏi...");
+            try {
+                await fbPatchState({ cauHoiHienTai: String(id) });
+            } catch (error) {
+                console.error("Lỗi gửi câu hỏi:", error);
+                await showCustomAlert("Lỗi khi kết nối tới hệ thống: " + error.message);
+            }
+            hideLoading();
+        }
+
+        async function toggleBlurPiece(id) {
+            let strId = id.toString();
+            let isBlurred = serverBlurredPieces.includes(strId);
+            if (!isBlurred) {
+                let isConfirm = await showCustomConfirm("XÁC NHẬN:<br>Bạn muốn LÀM MỜ (khóa) câu hỏi và mảnh ghép số <b style='color:#dc3545'>" + strId + "</b> vì không có đội nào trả lời đúng?");
+                if (!isConfirm) return;
+                serverBlurredPieces.push(strId);
+            } else {
+                serverBlurredPieces = serverBlurredPieces.filter(x => x !== strId);
+            }
+            
+            showLoading("Đang xử lý khóa/mở khóa mảnh...");
+            try {
+                let blurredStr = serverBlurredPieces.join(',');
+                await fbPatchState({ blurredPieces: blurredStr });
+            } catch (e) {}
+            hideLoading();
+        }
+
+        async function resetBlurAll() {
+            let isConfirm = await showCustomConfirm("XÁC NHẬN TẠO TRẬN MỚI:<br>Xóa toàn bộ trạng thái làm mờ, đóng tất cả mảnh ghép và xóa đáp án đã nộp?");
+            if (isConfirm) {
+                showLoading("Đang dọn dẹp hệ thống...");
+                try {
+                    await fbPatchState({
+                        cauHoiHienTai: "", blurredPieces: "", showAnswer: false,
+                        manh1: false, manh2: false, manh3: false, manh4: false, manh5: false
+                    });
+                    await fbSend("DELETE", "/submittedAnswers");
+                    serverBlurredPieces = [];
+                } catch (e) {}
+                hideLoading();
+            }
+        }
+
+        async function togglePiece(pid) { 
+            let num = pid.replace('p', '');
+            if (pid === 'p5') {
+                let btnCenter = document.getElementById('btn-p5');
+                let isOpened = btnCenter.classList.contains('opened');
+                let isConfirm = await showCustomConfirm(isOpened ? "XÁC NHẬN:<br>Bạn có muốn <b>ĐÓNG</b> toàn bộ 5 mảnh ghép?" : "XÁC NHẬN:<br>Bạn có muốn <b>MỞ</b> toàn bộ 5 mảnh ghép?");
+                if (!isConfirm) return;
+                
+                showLoading("Đang lật các mảnh ghép...");
+                try {
+                    const st = !isOpened;
+                    await fbPatchState({ manh1: st, manh2: st, manh3: st, manh4: st, manh5: st });
+                } catch (e) {}
+                hideLoading();
+            } else {
+                showLoading("Đang lật mảnh ghép...");
+                let el = document.getElementById('btn-' + pid);
+                let targetState = !el.classList.contains('opened');
+                try {
+                   await fbPatchState({ ["manh" + num]: targetState });
+                } catch (e) {}
+                hideLoading();
+            }
+        }
+
+        // ==========================================
+        // CẬP NHẬT ĐIỂM SỐ GỌI QUA MySQL API (Ở khung đội chính)
+        // ==========================================
+        async function changeScore(teamName, dbCol, inputId, multiplier, scoreId) {
+            let val = parseInt(document.getElementById(inputId).value);
+            if (isNaN(val) || val <= 0) {
+                await showCustomAlert('Vui lòng nhập số điểm hợp lệ!');
+                return;
+            }
+            if (!dbCol || dbCol === "") {
+                await showCustomAlert("Chưa có ánh xạ Cột cho đội này! Vui lòng tải lại trang.");
+                return;
+            }
+            
+            let points = val * multiplier;
+            
+            showLoading(`Đang cập nhật điểm...`);
+            try {
+                let getRes = await fetch(`${FB_DIEMSO}/${dbCol}.json?_t=${Date.now()}`);
+                let currentScore = parseInt(await getRes.json()) || 0;
+                let newScore = currentScore + points;
+
+                let putRes = await fetch(`${FB_DIEMSO}/${dbCol}.json`, {
+                    method: "PUT",
+                    body: JSON.stringify(newScore)
+                });
+                if (!putRes.ok) throw new Error("HTTP " + putRes.status);
+
+                let scoreEl = document.getElementById(scoreId);
+                if (scoreEl) scoreEl.innerText = newScore;
+                window.mysqlScoresAdmin[teamName] = newScore;
+            } catch (e) {
+                console.error("Lỗi thao tác API diemso:", e);
+                await showCustomAlert("Không thể cập nhật điểm, vui lòng kiểm tra kết nối mạng!");
+            }
+            hideLoading();
+        }
+
+        // ==========================================
+        // CHUYỂN TRANG
+        // ==========================================
+        async function goToRound1() {
+            let isConfirm = await showCustomConfirm("Bạn có chắc chắn muốn quay về <b>Vòng 1</b>?<br>Màn hình Khán giả cũng sẽ tự động chuyển trang.");
+            if (isConfirm) {
+                window.location.href = "../vong1_rieng/";
+            }
+        }
+
+        function goToRound3() {
+            window.location.href = "../vong3/";
+        }
+
+        function showLoading(msg = "Đang xử lý...") { document.getElementById('loading-text').innerText = msg; document.getElementById('loading-overlay').style.display = 'flex'; }
+        function hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
+
+        // ==========================================
+        // KHỞI CHẠY KHI TẢI TRANG
+        // ==========================================
+        window.onload = async function() {
+            await initFirebaseConfig(); 
+            await initTeamMapping();
+            fetchMySQLScores();
+            fetchSheetData();
+        };
+    </script>
+</body>
+</html>

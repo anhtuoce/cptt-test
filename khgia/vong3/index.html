@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vòng 3 - Tăng Tốc | Đội chơi</title>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: radial-gradient(circle at top center, #1D6F9F 0%, #001425 100%); color: #fff; min-height: 100vh; display: flex; flex-direction: column; }
+
+        .header-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 18px; background: #001425; border-bottom: 2px solid #ffcc00; }
+        .round-title { color: #ffcc00; font-size: 1.25rem; font-weight: 800; letter-spacing: 1px; }
+        .team-chip { display: none; align-items: center; gap: 10px; font-weight: 700; color: #56ccf2; }
+        .header-mid { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+        .nav-link { color: #ffd700; font-size: 1.05rem; font-weight: bold; text-transform: uppercase; text-decoration: none; cursor: pointer; white-space: nowrap; padding: 6px 4px; transition: 0.2s; }
+        .nav-link:hover { color: #34e062; }
+        @media (max-width: 600px) {
+            .header-bar { justify-content: space-between; }
+            .header-mid { order: 3; width: 100%; }
+            .nav-link { font-size: 0.95rem; }
+        }
+        .container { flex: 1; width: 100%; max-width: 1000px; margin: 0 auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+
+        .panel { background: rgba(10,30,75,0.4); border: 1px solid #1a428a; border-radius: 10px; box-shadow: 0 0 25px rgba(26,66,138,0.5), inset 0 0 15px rgba(26,66,138,0.3); padding: 14px 18px; text-align: center; width: 100%; }
+        .q-subject { color: #ffcc00; font-size: 1.2rem; font-weight: bold; letter-spacing: 1px; margin-bottom: 8px; }
+        .q-text { font-size: clamp(1.1rem, 2.6vh, 1.6rem); font-weight: bold; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .q-text.q-long { font-size: clamp(1rem, 2.2vh, 1.3rem); font-weight: 600; }
+        .waiting-text { font-size: 1.4rem; font-weight: bold; padding: 20px 0; }
+
+        .timer-display { font-size: 3rem; font-weight: bold; color: #56ccf2; text-shadow: 0 0 15px rgba(86,204,242,0.6); font-family: monospace; line-height: 1; text-align: center; transition: color .3s; }
+
+        .q-layout-text { display: flex; justify-content: center; }
+        .q-layout-stack { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .q-layout-stack .q-media { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 14px; width: 100%; }
+        .q-layout-stack .media-item img { max-height: 28vh; max-width: 100%; }
+        .q-layout-stack .q-media.count-1 .media-item img { max-height: 34vh; }
+        .q-layout-stack .q-media.count-1 .media-item { max-width: 100%; }
+        .q-layout-split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: stretch; text-align: left; }
+        .q-layout-split .q-text-col { display: flex; align-items: center; padding-right: 14px; border-right: 2px dashed #56ccf2; }
+        .q-layout-split .q-media { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-content: center; }
+        .q-layout-split .q-media .media-item:last-child:nth-child(odd) { grid-column: span 2; justify-content: center; }
+        .q-layout-split .media-item img { max-height: 22vh; }
+        .media-item { display: flex; align-items: center; gap: 6px; margin: 0; min-width: 0; }
+        .media-label { color: #56ccf2; font-size: 1.4rem; font-weight: bold; min-width: 26px; text-align: right; }
+        .media-item img { object-fit: contain; max-width: calc(100% - 32px); border: 2px solid #56ccf2; border-radius: 6px; background: rgba(0,0,0,0.3); padding: 3px; }
+        .q-layout-stack .q-media.count-1 .media-item img { max-width: 100%; }
+        @media (max-width: 760px) {
+            .q-layout-split { grid-template-columns: 1fr; }
+            .q-layout-split .q-text-col { border-right: none; padding-right: 0; }
+        }
+
+        .hint-wrapper { margin-top: 10px; border-top: 1px dashed #56ccf2; padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+        .hint-wrapper:empty { display: none; }
+        .hint-item { background: rgba(253,126,20,0.15); padding: 8px 12px; border-left: 4px solid #fd7e14; border-radius: 6px; animation: fadeIn .5s ease; display: flex; flex-direction: column; align-items: center; }
+        .hint-text { font-size: 1.15rem; color: #ffd700; font-weight: bold; white-space: pre-wrap; }
+        .hint-item img { max-height: 90px; margin-top: 5px; object-fit: contain; border-radius: 4px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        .official-answer { margin-top: 10px; padding: 10px 15px; background: rgba(40,167,69,0.2); border: 2px dashed #28a745; border-radius: 8px; color: #28a745; font-size: 1.4rem; font-weight: bold; text-transform: uppercase; overflow-wrap: anywhere; }
+        .official-answer:empty { display: none; }
+
+        .answer-card { background: rgba(0,20,37,0.85); border: 1px solid #1a428a; border-radius: 10px; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+        .answer-card label { color: #ffcc00; font-weight: bold; text-align: left; }
+        .answer-row { display: flex; gap: 10px; }
+        #ans-input { flex: 1; min-width: 0; background: #001425; color: #fff; border: 2px solid #1a428a; border-radius: 8px; padding: 12px 14px; font-size: 1.3rem; font-weight: bold; outline: none; }
+        #ans-input:focus { border-color: #56ccf2; box-shadow: 0 0 10px rgba(86,204,242,0.5); }
+        #ans-input:disabled { opacity: 0.5; }
+        #ans-btn { background: #28a745; color: #fff; border: none; border-radius: 8px; padding: 0 26px; font-size: 1.15rem; font-weight: 800; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        #ans-btn:hover:not(:disabled) { background: #218838; transform: scale(1.03); }
+        #ans-btn:disabled { background: #555; cursor: not-allowed; }
+        .ans-msg { min-height: 1.4em; text-align: left; color: #28a745; font-size: 1.05rem; overflow-wrap: anywhere; }
+        .ans-msg .late { color: #ff416c; font-weight: bold; }
+        .ans-err { min-height: 1.2em; text-align: left; color: #ff6b81; font-size: 0.95rem; }
+        .net-status { text-align: center; color: #888; font-size: 0.8rem; }
+
+        .media-item img, .hint-item img { cursor: zoom-in; }
+        #lightbox { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.92); display: none; flex-direction: column; }
+        #lightbox.open { display: flex; }
+        #lb-stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none; cursor: grab; position: relative; }
+        #lb-stage.dragging { cursor: grabbing; }
+        #lb-img { max-width: 96vw; max-height: calc(100vh - 90px); object-fit: contain; user-select: none; -webkit-user-drag: none; will-change: transform; transform-origin: center center; border-radius: 4px; }
+        #lb-bar { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); background: #000; border-top: 1px solid #1a428a; flex-wrap: wrap; }
+        #lb-bar button { background: #0a1738; color: #ffd700; border: 1px solid #1a428a; border-radius: 8px; min-width: 44px; height: 40px; padding: 0 12px; font-size: 1.2rem; font-weight: 800; cursor: pointer; }
+        #lb-bar button:hover { background: #1a428a; }
+        #lb-bar #lb-close { background: #a71d2a; border-color: #ff416c; color: #fff; }
+        #lb-zoom { color: #56ccf2; font-weight: bold; min-width: 58px; text-align: center; font-family: monospace; }
+        #lb-hint { position: absolute; top: 8px; left: 0; right: 0; text-align: center; color: #888; font-size: 0.8rem; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <a class="nav-link" onclick="window.open('../../')">◀ QUAY LẠI</a>
+        <div class="header-mid">
+            <div class="round-title">CHINH PHỤC TRI THỨC - VÒNG 3: TĂNG TỐC</div>
+            <div class="team-chip" id="team-chip">
+                <span id="team-label"></span>
+            </div>
+        </div>
+        <a class="nav-link" onclick="window.open('../vong4/')">VÒNG 4 ▶</a>
+    </div>
+
+    <div class="container">
+
+        <div id="waiting-screen" class="panel" style="display:none;">
+            <div class="q-subject">[ HỆ THỐNG ]</div>
+            <div class="waiting-text" id="wait-text">Đang xác định đội của bạn...</div>
+        </div>
+
+        <div id="active-screen" style="display:none; flex-direction:column; gap:12px;">
+            <div id="timer-box" class="timer-display">--</div>
+
+            <div class="panel">
+                <div class="q-subject" id="q-subject"></div>
+                <div id="q-body"></div>
+                <div class="hint-wrapper" id="hints-box"></div>
+                <div class="official-answer" id="official-box"></div>
+            </div>
+
+            <div class="answer-card">
+                <label for="ans-input">Đáp án của đội bạn <span style="color:#ff9f43; font-weight:600;">(chỉ được nộp 1 lần, nộp xong không thể sửa)</span></label>
+                <div class="answer-row">
+                    <input id="ans-input" type="text" maxlength="500" autocomplete="off" autocapitalize="off" placeholder="Nhập đáp án rồi bấm NỘP BÀI (hoặc Enter)">
+                    <button id="ans-btn" onclick="submitAnswer()">NỘP BÀI</button>
+                </div>
+                <div class="ans-err" id="ans-err"></div>
+                <div class="ans-msg" id="ans-msg"></div>
+            </div>
+        </div>
+
+        <div class="net-status" id="net-status"></div>
+        <div class="net-status">Vòng 3 · đội lấy từ màn hình chính (không chọn lại)</div>
+    </div>
+
+    <div id="lightbox" aria-hidden="true">
+        <div id="lb-stage">
+            <div id="lb-hint">Cuộn chuột / chụm 2 ngón để zoom · kéo để di chuyển · nhấp đúp để phóng to/thu nhỏ</div>
+            <img id="lb-img" alt="">
+        </div>
+        <div id="lb-bar">
+            <button id="lb-out" title="Thu nhỏ">−</button>
+            <span id="lb-zoom">100%</span>
+            <button id="lb-in" title="Phóng to">+</button>
+            <button id="lb-reset" title="Vừa khung">⟲</button>
+            <button id="lb-close" title="Đóng (Esc)">✕ Đóng</button>
+        </div>
+    </div>
+
+    <script>
+        // ================= CẤU HÌNH FIREBASE (trang ở vongchoi/vong3/ -> ../../api/*.json) =================
+        const CFG_V3 = "../../api/vong3.json";
+        const CFG_DS = "../../api/diemso.json";
+        let V3 = "", DS = "";
+
+        async function loadBase(cfgUrl) {
+            const j = await (await fetch(cfgUrl, { cache: "no-store" })).json();
+            return String(j.api_url || "").trim().replace(/\.json.*$/i, "").replace(/\/+$/, "");
+        }
+        async function fbGet(base, path) {
+            const r = await fetch(base + (path ? "/" + path : "") + ".json", { cache: "no-store" });
+            if (!r.ok) throw new Error("Firebase " + r.status);
+            return r.json();
+        }
+        async function fbReq(method, base, path, val) {
+            const r = await fetch(base + "/" + path + ".json", { method: method, body: val === undefined ? undefined : JSON.stringify(val) });
+            if (!r.ok) throw new Error("Firebase " + r.status);
+            return r.json();
+        }
+
+        // ================= TRẠNG THÁI =================
+        let team = null;               // {key, name}
+        let state = null, curQ = null, curQKey = null;
+        let offset = 0;
+        let serverAnswered = false;
+        let submittedText = null, submittedTime = null;
+        let sending = false, lastTimeUp = null, lastHintCount = -1, polling = false;
+        let pollTimer = null, inFlight = false;
+
+        const $ = id => document.getElementById(id);
+
+        // ================= TIỆN ÍCH =================
+        function esc(s) {
+            return String(s === undefined || s === null ? "" : s)
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+        }
+        function setHtml(id, html) {
+            const el = $(id);
+            if (el && el._lastHtml !== html) { el.innerHTML = html; el._lastHtml = html; }
+        }
+        function show(which) {
+            $('waiting-screen').style.display = which === 'wait'   ? 'block' : 'none';
+            $('active-screen').style.display  = which === 'active' ? 'flex'  : 'none';
+        }
+        function parseImages(str) {
+            if (!str) return [];
+            return String(str).split(/[\n;]+|,(?=\s*(?:https?:|data:))/).map(s => s.trim()).filter(Boolean);
+        }
+        function mediaLabel(i, total) { return total <= 4 ? String.fromCharCode(65 + i) : String(i + 1); }
+        function serverNow() { return Date.now() + offset; }
+
+        async function syncClock() {
+            try {
+                let id = sessionStorage.getItem("v3_cid");
+                if (!id) { id = "c" + Math.random().toString(36).slice(2, 10); sessionStorage.setItem("v3_cid", id); }
+                const t0 = Date.now();
+                let ts = await fbReq("PUT", V3, "_ping/" + id, { ".sv": "timestamp" });
+                const t1 = Date.now();
+                if (typeof ts !== "number") ts = await fbGet(V3, "_ping/" + id);
+                if (typeof ts === "number") offset = ts - (t0 + t1) / 2;
+            } catch (e) { console.error("Lỗi đồng bộ giờ:", e); }
+        }
+
+        function normQuestion(id, q) {
+            if (!q) return null;
+            let g = q.goiy || [];
+            if (!Array.isArray(g)) g = Object.values(g);
+            g = g.filter(Boolean).map(h => ({ at: Number(h.at) || 0, text: h.text || "", image: h.image || "" }))
+                 .sort((a, b) => a.at - b.at);
+            return {
+                id: id, noiDung: q.noidung || "", hinhAnh: q.hinhanh || "", dapAn: q.dapan || "",
+                duration: Number(q.thoigian_giay) || 30, goiy: g
+            };
+        }
+        function isRunning() {
+            return !!(state && state.cauhoihientai !== "" && state.cauhoihientai !== null && state.cauhoihientai !== undefined && curQ);
+        }
+        function elapsedSec() {
+            const st = Number(state && state.start_ms) || 0;
+            return st > 0 ? (serverNow() - st) / 1000 : 0;
+        }
+        function isTimeUp() {
+            if (!isRunning()) return false;
+            if (state.hien_dapan) return true;
+            return Number(state.start_ms) > 0 && elapsedSec() >= curQ.duration;
+        }
+        function revealedHints() {
+            if (!isRunning()) return [];
+            const e = elapsedSec();
+            return curQ.goiy.filter(h => e >= h.at);
+        }
+
+        // ================= XÁC ĐỊNH ĐỘI =================
+        // Đội đã được chọn 1 lần ở trang chọn đội: localStorage "olympia_team" (tên) / "olympia_team_key" (mã).
+        // Vòng 3 chỉ ĐỌC lại và đối chiếu với danh sách đội trong Firebase (diemso). Không cho chọn lại.
+        const TEAM_PICK_URL = "../../";
+        let teamList = [];   // [{key,name}]
+
+        async function loadTeamList() {
+            try {
+                const raw = await fbGet(DS, "");
+                teamList = [];
+                Object.entries(raw || {}).forEach(([k, v]) => {
+                    if (v === null || v === undefined || k.charAt(0) === "_") return;
+                    teamList.push({ key: k, name: (typeof v === "object" && (v.tendoi || v.ten)) || k });
+                });
+                return teamList.length > 0;
+            } catch (e) { console.error("Lỗi tải danh sách đội:", e); }
+            return false;
+        }
+        function resolveTeam() {
+            const name = (localStorage.getItem("olympia_team") || "").trim().toLowerCase();
+            const key  = (localStorage.getItem("olympia_team_key") || "").trim().toLowerCase();
+            return teamList.find(x => key && x.key.toLowerCase() === key)
+                || teamList.find(x => name && x.key.toLowerCase() === name)
+                || teamList.find(x => name && x.name.toLowerCase() === name)
+                || null;
+        }
+        async function initTeam() {
+            try {
+                [V3, DS] = await Promise.all([loadBase(CFG_V3), loadBase(CFG_DS)]);
+            } catch (e) {
+                show('wait'); $('wait-text').innerText = "Không đọc được cấu hình api/vong3.json hoặc api/diemso.json";
+                return;
+            }
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const u = params.get("team"), k = params.get("teamkey");
+                if (u) localStorage.setItem("olympia_team", u);
+                if (k) localStorage.setItem("olympia_team_key", k);
+            } catch (e) {}
+
+            if (!localStorage.getItem("olympia_team") && !localStorage.getItem("olympia_team_key")) {
+                window.location.href = TEAM_PICK_URL; return;
+            }
+            show('wait');
+            while (!(await loadTeamList())) {
+                $('net-status').innerText = "Không tải được danh sách đội, đang thử lại...";
+                await new Promise(r => setTimeout(r, 2000));
+            }
+            $('net-status').innerText = "";
+
+            const t = resolveTeam();
+            if (!t) { window.location.href = TEAM_PICK_URL; return; }
+            team = t;
+            await syncClock();
+            setInterval(syncClock, 60000);
+            $('wait-text').innerText = "Đang chờ MC phát câu hỏi...";
+            $('team-label').innerText = "Đội: " + team.name;
+            $('team-chip').style.display = 'flex';
+            if (!polling) { polling = true; poll(); }
+        }
+
+        // ================= RENDER CÂU HỎI =================
+        function buildQuestionHtml(q) {
+            const text = esc(q.noiDung || "");
+            const imgs = parseImages(q.hinhAnh);
+            const n = imgs.length;
+            const longClass = text.length > 280 ? " q-long" : "";
+
+            if (n === 0) return `<div class="q-layout-text"><div class="q-text${longClass}">${text}</div></div>`;
+
+            const items = imgs.map((url, i) => `
+                <figure class="media-item">
+                    ${n >= 2 ? `<span class="media-label">${mediaLabel(i, n)}.</span>` : ""}
+                    <img src="${esc(url)}" alt="Hình ${i + 1}" onerror="this.style.opacity=0.25">
+                </figure>`).join("");
+
+            if (n >= 4) return `
+                <div class="q-layout-split">
+                    <div class="q-text-col"><div class="q-text${longClass}">${text}</div></div>
+                    <div class="q-media">${items}</div>
+                </div>`;
+
+            return `
+                <div class="q-layout-stack">
+                    <div class="q-text${longClass}">${text}</div>
+                    <div class="q-media count-${n}">${items}</div>
+                </div>`;
+        }
+        function buildHintsHtml() {
+            return revealedHints().map((h, i) => `
+                <div class="hint-item">
+                    <div class="hint-text">💡 Gợi ý ${i + 1}: ${esc(h.text)}</div>
+                    ${h.image && String(h.image).trim() !== "" ? `<img src="${esc(String(h.image).trim())}" alt="Gợi ý ${i + 1}">` : ""}
+                </div>`).join("");
+        }
+
+        // ================= Ô NHẬP / THÔNG BÁO =================
+        function updateAnswerUI() {
+            if (!isRunning()) return;
+            const timeUp = isTimeUp();
+
+            const locked = submittedText !== null || serverAnswered;
+            $('ans-input').disabled = timeUp || locked;
+            $('ans-btn').disabled = timeUp || locked || sending;
+            $('ans-btn').innerText = locked ? "ĐÃ NỘP" : "NỘP BÀI";
+            if (submittedText !== null) $('ans-input').value = submittedText;
+
+            let html = "";
+            if (submittedText !== null) {
+                html = `✔ Đã nộp: <b>${esc(submittedText)}</b>${submittedTime ? ` (⏱ ${esc(submittedTime)})` : ""} — bài đã chốt, không thể sửa.`;
+            } else if (serverAnswered) {
+                html = `✔ Hệ thống đã ghi nhận bài nộp của đội bạn.`;
+            } else if (timeUp) {
+                html = `<span class="late">Đội bạn chưa nộp bài ở câu này.</span>`;
+            }
+            if (timeUp && (submittedText !== null || serverAnswered)) html += ` <span class="late">— HẾT GIỜ</span>`;
+            setHtml('ans-msg', html);
+        }
+
+        function storeKey() { return "v3ans:" + team.key + ":" + curQKey; }
+
+        // ================= LẤY TRẠNG THÁI TỪ FIREBASE =================
+        async function poll() {
+            if (!team) { polling = false; return; }
+            if (inFlight) return;
+            inFlight = true;
+            try {
+                state = (await fbGet(V3, "match_state")) || { cauhoihientai: "", hien_dapan: false, start_ms: 0 };
+                $('net-status').innerText = "";
+
+                const id = state.cauhoihientai;
+                const has = id !== "" && id !== null && id !== undefined;
+
+                if (!has) {
+                    curQ = null; curQKey = null; lastTimeUp = null; lastHintCount = -1;
+                    show('wait');
+                } else {
+                    const key = id + ":" + state.start_ms;
+                    if (key !== curQKey || !curQ) {          // câu mới hoặc MC phát lại câu cũ
+                        curQ = normQuestion(id, await fbGet(V3, "question_bank/" + id));
+                        curQKey = key;
+                        $('ans-input').value = "";
+                        $('ans-err').innerText = "";
+                        submittedText = null; submittedTime = null;
+                        try {
+                            const saved = JSON.parse(localStorage.getItem(storeKey()) || "null");
+                            if (saved) { submittedText = saved.text; submittedTime = saved.time; }
+                        } catch (e) {}
+                        lastTimeUp = null; lastHintCount = -1;
+                    }
+                    if (!curQ) { show('wait'); $('wait-text').innerText = "Không tìm thấy câu hỏi " + id; return; }
+
+                    const mine = await fbGet(V3, "answers/" + id + "/" + team.key);
+                    serverAnswered = !!(mine && mine.answer !== undefined);
+                    if (serverAnswered && submittedText === null) { submittedText = mine.answer; submittedTime = mine.time || null; }
+                    if (!serverAnswered && submittedText !== null && Number(state.start_ms) > 0) {
+                        // admin đã phát lại / reset -> bỏ bản nộp cũ lưu trong máy
+                        submittedText = null; submittedTime = null;
+                    }
+
+                    show('active');
+                    $('q-subject').innerText = `[ CÂU SỐ ${curQ.id} ]`;
+                    setHtml('q-body', buildQuestionHtml(curQ));
+                    setHtml('hints-box', buildHintsHtml());
+                    const ans = curQ.dapAn;
+                    setHtml('official-box', (state.hien_dapan && ans && String(ans).trim() !== "") ? `ĐÁP ÁN CHÍNH THỨC: ${esc(ans)}` : "");
+                    updateAnswerUI();
+                }
+            } catch (e) {
+                console.error(e);
+                $('net-status').innerText = "Mất kết nối Firebase, đang thử lại...";
+            } finally {
+                inFlight = false;
+                clearTimeout(pollTimer);
+                pollTimer = setTimeout(poll, 1000);
+            }
+        }
+
+        // ================= NỘP ĐÁP ÁN =================
+        async function submitAnswer() {
+            if (sending || !isRunning()) return;
+            if (isTimeUp()) return;
+            if (submittedText !== null || serverAnswered) return;
+
+            const val = $('ans-input').value.trim();
+            if (!val) { $('ans-err').innerText = "Vui lòng nhập đáp án trước khi nộp."; return; }
+            $('ans-err').innerText = "";
+
+            sending = true;
+            $('ans-btn').disabled = true;
+            $('ans-btn').innerText = "ĐANG GỬI...";
+            const qid = curQ.id, path = "answers/" + qid + "/" + team.key;
+            try {
+                // chống nộp trùng (máy khác của cùng đội)
+                const exist = await fbGet(V3, path);
+                if (exist && exist.answer !== undefined) { serverAnswered = true; throw new Error("Đội bạn đã nộp bài ở câu này rồi."); }
+
+                // kiểm tra lại: MC có đổi/đóng câu trong lúc chờ không
+                const st = await fbGet(V3, "match_state");
+                if (!st || String(st.cauhoihientai) !== String(qid) || Number(st.start_ms) !== Number(state.start_ms))
+                    throw new Error("Câu hỏi đã thay đổi, không thể nộp.");
+
+                // ghi bài kèm dấu thời gian của SERVER Firebase
+                await fbReq("PUT", V3, path, { answer: val, ts: { ".sv": "timestamp" } });
+                const saved = await fbGet(V3, path);
+                const secs = ((Number(saved && saved.ts) || serverNow()) - Number(state.start_ms)) / 1000;
+
+                if (secs > curQ.duration + 0.5) {          // nộp sau khi hết giờ -> hủy
+                    await fbReq("DELETE", V3, path);
+                    throw new Error("Đã hết giờ, bài nộp không được ghi nhận.");
+                }
+                const timeStr = Math.max(0, secs).toFixed(2) + "s";
+                await fbReq("PATCH", V3, path, { time: timeStr });
+
+                submittedText = val;
+                submittedTime = timeStr;
+                try { localStorage.setItem(storeKey(), JSON.stringify({ text: val, time: timeStr })); } catch (e) {}
+            } catch (e) {
+                $('ans-err').innerText = "⚠ " + e.message;
+            }
+            sending = false;
+            updateAnswerUI();
+        }
+
+        $('ans-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitAnswer(); });
+
+        // ================= ĐỒNG HỒ ĐẾM NGƯỢC (theo giờ server Firebase) =================
+        setInterval(() => {
+            const timerEl = $('timer-box');
+            if (!timerEl || !isRunning()) return;
+
+            const timeUp = isTimeUp();
+            if (Number(state.start_ms) > 0) {
+                const left = Math.min(curQ.duration, Math.ceil(Math.max(0, curQ.duration - elapsedSec())));
+                if (timeUp || left <= 0) { timerEl.innerText = "HẾT GIỜ"; timerEl.style.color = "#ff416c"; }
+                else { timerEl.innerText = left; timerEl.style.color = left <= 5 ? "#ffcc00" : "#56ccf2"; }
+            } else {
+                timerEl.innerText = "--";
+            }
+            const hc = revealedHints().length;
+            if (hc !== lastHintCount) { lastHintCount = hc; setHtml('hints-box', buildHintsHtml()); }
+            if (timeUp !== lastTimeUp) { lastTimeUp = timeUp; updateAnswerUI(); }
+        }, 100);
+
+        window.onload = initTeam;
+
+        // ================= XEM ẢNH PHÓNG TO / THU NHỎ =================
+        (function () {
+            const box = $('lightbox'), stage = $('lb-stage'), img = $('lb-img'), zl = $('lb-zoom');
+            const MIN = 0.5, MAX = 8;
+            let scale = 1, tx = 0, ty = 0;
+            const ptrs = new Map();
+            let moved = 0, pinch = null;
+
+            function apply() {
+                img.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+                zl.textContent = Math.round(scale * 100) + "%";
+            }
+            function reset() { scale = 1; tx = 0; ty = 0; apply(); }
+            function zoomAt(ns, cx, cy) {
+                ns = Math.min(MAX, Math.max(MIN, ns));
+                const r = stage.getBoundingClientRect();
+                const px = cx - (r.left + r.width / 2), py = cy - (r.top + r.height / 2);
+                const k = ns / scale;
+                tx = px - (px - tx) * k;
+                ty = py - (py - ty) * k;
+                scale = ns;
+                if (scale <= 1) { tx = 0; ty = 0; }
+                apply();
+            }
+            function zoomCenter(f) {
+                const r = stage.getBoundingClientRect();
+                zoomAt(scale * f, r.left + r.width / 2, r.top + r.height / 2);
+            }
+            function open(src) {
+                img.src = src;
+                reset();
+                box.classList.add('open');
+                box.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+            function close() {
+                box.classList.remove('open');
+                box.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+                img.removeAttribute('src');
+                ptrs.clear(); pinch = null;
+            }
+
+            document.addEventListener('click', e => {
+                const t = e.target;
+                if (t && t.tagName === 'IMG' && t.id !== 'lb-img' && t.closest('.media-item, .hint-item')) open(t.currentSrc || t.src);
+            });
+
+            $('lb-in').onclick    = () => zoomCenter(1.4);
+            $('lb-out').onclick   = () => zoomCenter(1 / 1.4);
+            $('lb-reset').onclick = reset;
+            $('lb-close').onclick = close;
+            document.addEventListener('keydown', e => {
+                if (!box.classList.contains('open')) return;
+                if (e.key === 'Escape') close();
+                else if (e.key === '+' || e.key === '=') zoomCenter(1.4);
+                else if (e.key === '-') zoomCenter(1 / 1.4);
+                else if (e.key === '0') reset();
+            });
+
+            stage.addEventListener('wheel', e => {
+                e.preventDefault();
+                zoomAt(scale * Math.exp(-e.deltaY * 0.0018), e.clientX, e.clientY);
+            }, { passive: false });
+
+            stage.addEventListener('pointerdown', e => {
+                stage.setPointerCapture(e.pointerId);
+                ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                moved = 0;
+                if (ptrs.size === 2) {
+                    const [a, b] = [...ptrs.values()];
+                    pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, s: scale };
+                }
+                stage.classList.add('dragging');
+            });
+            stage.addEventListener('pointermove', e => {
+                const p = ptrs.get(e.pointerId);
+                if (!p) return;
+                const dx = e.clientX - p.x, dy = e.clientY - p.y;
+                p.x = e.clientX; p.y = e.clientY;
+                moved += Math.abs(dx) + Math.abs(dy);
+                if (ptrs.size === 2 && pinch) {
+                    const [a, b] = [...ptrs.values()];
+                    const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+                    zoomAt(pinch.s * d / pinch.d, (a.x + b.x) / 2, (a.y + b.y) / 2);
+                } else if (ptrs.size === 1 && scale > 1) {
+                    tx += dx; ty += dy; apply();
+                }
+            });
+            function endPtr(e) {
+                ptrs.delete(e.pointerId);
+                if (ptrs.size < 2) pinch = null;
+                if (ptrs.size === 0) stage.classList.remove('dragging');
+            }
+            stage.addEventListener('pointerup', e => {
+                const under = document.elementFromPoint(e.clientX, e.clientY);
+                if (ptrs.size === 1 && moved < 6 && under !== img) { endPtr(e); close(); return; }
+                endPtr(e);
+            });
+            stage.addEventListener('pointercancel', endPtr);
+
+            img.addEventListener('dblclick', e => {
+                if (scale > 1.05) reset(); else zoomAt(2.5, e.clientX, e.clientY);
+            });
+        })();
+    </script>
+</body>
+</html>

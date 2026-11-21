@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olympia Admin - Vòng 1 Chung</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f7; margin: 0; padding: 15px; color: #333; }
+        .dashboard { max-width: 98%; margin: 0 auto; }
+        
+        .header-panel { background: #003366; color: white; padding: 20px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .header-panel h1 { margin: 0; font-size: 2rem; }
+        .btn-reset { background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 1.1rem; }
+        .btn-reset:hover { background: #c82333; }
+
+        /* THÊM CSS CHO NÚT CHUYỂN TRANG */
+        .btn-link { 
+            background: #28a745; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            font-size: 1.1rem; 
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-link:hover { background: #218838; }
+
+        .main-grid { display: grid; grid-template-columns: 3.5fr 6.5fr; gap: 20px; align-items: start; }
+
+        /* BẢNG ĐIỂM 4 ĐỘI */
+        .teams-panel { display: flex; flex-direction: column; gap: 15px; position: sticky; top: 15px; }
+        .team-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 6px solid #007bff; display: flex; flex-direction: column; gap: 15px; }
+        .team-info { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px;}
+        .team-card h3 { margin: 0; color: #003366; font-size: 1.8rem; }
+        .score { font-size: 3rem; font-weight: bold; color: #003366; }
+
+        .score-controls { display: flex; justify-content: center; gap: 10px; align-items: center; }
+        .btn-minus, .btn-plus { border: none; color: white; font-size: 1.5rem; font-weight: bold; border-radius: 6px; cursor: pointer; width: 60px; height: 40px; transition: 0.2s; display: flex; align-items: center; justify-content: center;}
+        .btn-minus { background: #dc3545; }
+        .btn-minus:hover { background: #c82333; }
+        .btn-plus { background: #28a745; }
+        .btn-plus:hover { background: #218838; }
+        .score-input { width: 60px; height: 40px; text-align: center; font-size: 1.3rem; font-weight: bold; border: 2px solid #ccc; border-radius: 6px; outline: none; color: #003366; }
+        .score-input:focus { border-color: #007bff; }
+
+        /* KHUNG NGÂN HÀNG CÂU HỎI */
+        .questions-panel { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .q-header { border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;}
+        
+        /* THANH SỐ THỨ TỰ (TRÒN) */
+        .quick-nav-box { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 2px dashed #eee; justify-content: center;}
+        .q-circle { width: 50px; height: 50px; border-radius: 50%; border: 3px solid #ccc; background: white; color: #333; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
+        .q-circle.opened { border-color: #ffc107; background: #fff3cd; color: #856404; } 
+        .q-circle.active { border-color: #007bff; background: #007bff; color: white; transform: scale(1.15); box-shadow: 0 0 15px rgba(0,123,255,0.6); }
+        .q-circle:hover { transform: scale(1.1); border-color: #007bff; }
+
+        .q-list { display: flex; flex-direction: column; gap: 15px; }
+        .q-item { background: #f8f9fa; padding: 20px; border: 1px solid #dee2e6; border-radius: 10px; display: flex; flex-direction: column; gap: 15px; transition: 0.2s; display: none; }
+        .q-item.active { display: flex; background: #e7f1ff; border-color: #007bff; box-shadow: 0 0 10px rgba(0,123,255,0.2); border-left: 6px solid #007bff;}
+        
+        .q-title { font-size: 1.4rem; font-weight: bold; color: #003366; }
+        .q-content { font-size: 1.25rem; line-height: 1.6; color: #333; }
+        .q-answer-admin { font-size: 1.2rem; color: #28a745; font-weight: bold; margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px; }
+        
+        .q-actions { display: flex; margin-top: 10px;}
+        .btn-dapan { background: #6c757d; color: white; padding: 15px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.2rem; transition: 0.2s; text-transform: uppercase;}
+        .btn-dapan.opened { background: #28a745; box-shadow: 0 0 10px rgba(40,167,69,0.4); }
+        
+        #status-text { text-align: center; color: #666; font-style: italic; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- ĐÃ CHỈNH SỬA HEADER CÓ THÊM NÚT CHUYỂN VÒNG -->
+        <div class="header-panel">
+            <a href="../vong2/" class="btn-link">MẶC ĐỊNH VÒNG 1</a>
+            <h1>BẢNG ĐIỀU KHIỂN MC</h1>
+            <div>
+                <button class="btn-reset" onclick="resetRound()">Làm mới Vòng Chơi</button>
+                <a href="../vong2/" class="btn-link" style="margin-left: 10px;">CHUYỂN VÒNG 2 ▶</a>
+            </div>
+        </div>
+        
+        <div class="main-grid">
+            <div class="teams-panel" id="team-grid"></div>
+
+            <div class="questions-panel">
+                <div class="q-header">
+                    <h2 style="margin: 0; color: #333;">Ngân hàng câu hỏi & Trạng thái</h2>
+                    <button class="btn-reset" style="background:#343a40;" onclick="closeQuestion()">ĐÓNG CÂU HỎI & LÀM SẠCH MÀN HÌNH</button>
+                </div>
+                
+                <div class="quick-nav-box" id="quick-nav"></div>
+
+                <div class="q-list" id="question-list">
+                    <div style="text-align:center; color:#666; font-style:italic;">Đang tải dữ liệu từ CSDL...</div>
+                </div>
+            </div>
+        </div>
+        <div id="status-text">Đang kết nối cơ sở dữ liệu...</div>
+    </div>
+
+    <script>
+        const API_URL = "../../api/vong1_1.php";
+        const SCORE_API = "../../api/diemso.php"; 
+        
+        let currentSelectedQuestion = null; 
+        let serverActiveQuestion = ''; 
+        let openedQuestions = []; 
+        let inputStates = {};
+
+        async function fetchScores() {
+            try {
+                document.querySelectorAll('.score-input').forEach(inp => {
+                    if (document.activeElement === inp) inputStates['focus'] = inp.id;
+                    inputStates[inp.id] = inp.value;
+                });
+
+                const res = await fetch(SCORE_API + "?action=get&_t=" + Date.now());
+                const data = await res.json();
+                
+                if (data.status === "success" && data.data) {
+                    const teamGrid = document.getElementById('team-grid');
+                    teamGrid.innerHTML = '';
+                    
+                    for (let i = 1; i <= 4; i++) {
+                        let dbCol = 'Doi' + i;
+                        let score = data.data[dbCol] !== undefined ? data.data[dbCol] : 0;
+                        
+                        teamGrid.innerHTML += `
+                            <div class="team-card">
+                                <div class="team-info">
+                                    <h3>Đội ${i}</h3>
+                                    <div class="score">${score}</div>
+                                </div>
+                                <div class="score-controls">
+                                    <button class="btn-minus" onclick="changeScore('${dbCol}', 'inp_doi${i}', -1)">-</button>
+                                    <input type="number" id="inp_doi${i}" value="10" step="10" class="score-input" onclick="this.select()">
+                                    <button class="btn-plus" onclick="changeScore('${dbCol}', 'inp_doi${i}', 1)">+</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    Object.keys(inputStates).forEach(id => {
+                        if (id === 'focus') return;
+                        let el = document.getElementById(id);
+                        if (el) {
+                            el.value = inputStates[id];
+                            if (inputStates['focus'] === id) el.focus();
+                        }
+                    });
+                }
+            } catch(e) { console.error("Lỗi lấy điểm:", e); }
+        }
+
+        function changeScore(dbCol, inputId, multiplier) {
+            let val = parseInt(document.getElementById(inputId).value); 
+            if (isNaN(val) || val <= 0) { alert('Vui lòng nhập số điểm hợp lệ!'); return; }
+            let points = val * multiplier;
+            
+            fetch(`${SCORE_API}?action=get&_t=${Date.now()}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success' && data.data) {
+                        let currentScore = parseInt(data.data[dbCol]) || 0; 
+                        let newScore = currentScore + points; 
+                        fetch(`${SCORE_API}?action=update&team=${dbCol}&score=${newScore}`)
+                            .then(() => fetchScores());
+                    }
+                });
+        }
+
+        async function fetchState() {
+            try {
+                const res = await fetch(API_URL + "?action=getState&_t=" + Date.now());
+                const data = await res.json();
+
+                if (data.status === "success") {
+                    document.getElementById('status-text').innerText = "Trạng thái: Đã đồng bộ thành công.";
+                    serverActiveQuestion = data.cauhoihientai;
+                    openedQuestions = data.cauhoiopen ? data.cauhoiopen.split(',') : []; 
+                    
+                    renderQuestions(data);
+                }
+            } catch(e) {
+                document.getElementById('status-text').innerText = "Lỗi kết nối CSDL!";
+            } finally {
+                setTimeout(() => { fetchScores(); fetchState(); }, 1500);
+            }
+        }
+
+        function renderQuestions(data) {
+            const qList = document.getElementById('question-list');
+            const navBox = document.getElementById('quick-nav');
+            
+            let questions = data.danhSachCauHoi || [];
+            if (questions.length === 0) return;
+
+            if (currentSelectedQuestion === null) {
+                qList.innerHTML = '<div style="text-align:center; padding: 20px; color: #666; font-style: italic; font-size: 1.1rem;">Vui lòng click vào số câu hỏi ở trên để phát nội dung lên màn hình.</div>';
+            } else {
+                qList.innerHTML = ''; 
+            }
+
+            let navHtml = '';
+
+            questions.forEach(q => {
+                let isServerActive = (q.sttcau == serverActiveQuestion); 
+                let isViewing = (q.sttcau == currentSelectedQuestion); 
+                let isOpened = openedQuestions.includes("cau" + q.sttcau); 
+                
+                let circleClass = "q-circle";
+                if (isServerActive) circleClass += " active";
+                else if (isOpened) circleClass += " opened"; 
+                
+                navHtml += `<div class="${circleClass}" onclick="selectAndPlayQuestion('${q.sttcau}')" title="Phát Câu ${q.sttcau}">${q.sttcau}</div>`;
+
+                if (isViewing) {
+                    let dapanOpened = (q.statusdapan == 1);
+                    let btnDapAnText = dapanOpened ? "✔ Đã Mở Đáp Án Lên Màn Hình" : "Mở Đáp Án Lên Màn Hình";
+                    let dapAnThucTe = q.danan || "Chưa có dữ liệu"; // Hiển thị đáp án cho Admin xem trước
+                    
+                    qList.innerHTML += `
+                        <div class="q-item active">
+                            <div class="q-title">Nội dung Câu hỏi ${q.sttcau}</div>
+                            <div class="q-content">${q.cauhoi || "(Nội dung trống)"}</div>
+                            <div class="q-answer-admin">💡 Gợi ý đáp án (Dành cho Admin): ${dapAnThucTe}</div>
+                            <div class="q-actions">
+                                <button class="btn-dapan ${dapanOpened ? 'opened' : ''}" onclick="toggleAnswer('${q.sttcau}', ${dapanOpened ? 0 : 1})">
+                                    ${btnDapAnText}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            navBox.innerHTML = navHtml;
+        }
+
+        function selectAndPlayQuestion(sttcau) {
+            currentSelectedQuestion = sttcau;
+            fetch(`${API_URL}?action=setQuestion&sttcau=${sttcau}`)
+                .then(() => fetchState());
+        }
+
+        function closeQuestion() {
+            fetch(`${API_URL}?action=setQuestion&sttcau=`)
+                .then(() => {
+                    currentSelectedQuestion = null;
+                    serverActiveQuestion = '';
+                    openedQuestions = [];
+                    fetchState();
+                });
+        }
+
+        function toggleAnswer(sttcau, targetStatus) {
+            fetch(`${API_URL}?action=updateAnswerStatus&sttcau=${sttcau}&status=${targetStatus}`)
+                .then(() => fetchState());
+        }
+
+        function resetRound() {
+            if (confirm("Làm mới Vòng 1.1 sẽ XÓA TRẠNG THÁI các câu đã phát (cauhoiopen) và đóng toàn bộ đáp án. Bạn có chắc chắn?")) {
+                fetch(`${API_URL}?action=resetAll`)
+                    .then(() => {
+                        currentSelectedQuestion = null;
+                        fetchState();
+                    });
+            }
+        }
+
+        fetchScores();
+        fetchState();
+    </script>
+</body>
+</html>

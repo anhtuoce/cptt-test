@@ -1,0 +1,129 @@
+{
+  "diemso": {
+    "doi1": { "diem": 0, "tendoi": "Đội 1" },
+    "doi2": { "diem": 0, "tendoi": "Đội 2" },
+    "doi3": { "diem": 0, "tendoi": "Đội 3" },
+    "doi4": { "diem": 0, "tendoi": "Đội 4" }
+  },
+  
+  "vong1_rieng": {
+    "match_state": {
+      "cauhoihientai": "PREPARE",
+      "doihientai": "Đội 1",
+      "thoigian": 0,
+      "config": {
+        "show": false,
+        "ketvong": false
+      },
+      "dananthisinh": {}
+    },
+    "question_bank": {
+      "goi1": {
+        "1": { "cauhoi": "Câu 1 gói 1", "dapan": "Đáp án 1" },
+        "2": { "cauhoi": "Câu 2 gói 1", "dapan": "Đáp án 2" }
+      },
+      "goi2": {
+        "1": { "cauhoi": "Câu 1 gói 2", "dapan": "Đáp án 1" },
+        "2": { "cauhoi": "Câu 2 gói 2", "dapan": "Đáp án 2" }
+      }
+    }
+  },
+
+  "vong1_chung": {
+    "match_state": {
+      "cauhoihientai": "PREPARE",
+      "thoigian": 0,
+      "chuong": {
+        "team_bam": "",
+        "is_locked": false
+      },
+      "config": {
+        "show": false,
+        "ketvong": false
+      }
+    },
+    "question_bank": {
+      "1": { "cauhoi": "Nội dung câu 1 chung", "dapan": "Đáp án 1" },
+      "2": { "cauhoi": "Nội dung câu 2 chung", "dapan": "Đáp án 2" },
+      "3": { "cauhoi": "Nội dung câu 3 chung", "dapan": "Đáp án 3" }
+    }
+  },
+
+  "vong2": {
+    "match_state": {
+      "cauhoihientai": "PREPARE",
+      "thoigian": 0,
+      "chuong_cnv": {
+        "team_bam": "",
+        "is_locked": false
+      },
+      "trangthai_hangngang": {
+        "1": "CHUA_MO", 
+        "2": "DA_MO",
+        "3": "CHUA_MO",
+        "4": "CHUA_MO"
+      },
+      "trangthai_hinhanh": "CHUA_MO"
+    },
+    "question_bank": {
+      "tukhoa": "ĐIỆN BIÊN PHỦ",
+      "so_kytu": 12,
+      "hangngang": {
+        "1": { "cauhoi": "Câu hỏi hàng ngang 1?", "dapan": "DAPAN1", "sokytu": 6 },
+        "2": { "cauhoi": "Câu hỏi hàng ngang 2?", "dapan": "DAPAN2", "sokytu": 6 },
+        "3": { "cauhoi": "Câu hỏi hàng ngang 3?", "dapan": "DAPAN3", "sokytu": 6 },
+        "4": { "cauhoi": "Câu hỏi hàng ngang 4?", "dapan": "DAPAN4", "sokytu": 6 }
+      }
+    }
+  },
+
+  "vong3": {
+    "match_state": {
+      "cauhoihientai": "PREPARE",
+      "thoigian": 0,
+      "danan_cacdoi": {
+        "doi1": { "dapan": "", "thoigian_nop": 0 },
+        "doi2": { "dapan": "", "thoigian_nop": 0 },
+        "doi3": { "dapan": "", "thoigian_nop": 0 },
+        "doi4": { "dapan": "", "thoigian_nop": 0 }
+      },
+      "config": {
+        "show_dapan": false
+      }
+    },
+    "question_bank": {
+      "1": { "cauhoi": "Đây là ai?", "dapan": "Trần Hưng Đạo", "loai": "hinhanh", "url": "link_anh_1" },
+      "2": { "cauhoi": "Sắp xếp các sự kiện?", "dapan": "A-C-B", "loai": "video", "url": "link_video_1" },
+      "3": { "cauhoi": "Tìm mật mã?", "dapan": "1234", "loai": "hinhanh", "url": "link_anh_2" },
+      "4": { "cauhoi": "Đoạn nhạc sau nói về bài hát nào?", "dapan": "Tiến quân ca", "loai": "audio", "url": "link_audio_1" }
+    }
+  },
+
+  "vong4": {
+    "match_state": {
+      "doihientai": "Đội 1",
+      "goicauhoi": [20, 20, 30],
+      "cauhoihientai": "PREPARE",
+      "thoigian": 0,
+      "ngoisao_hyvong": false,
+      "chuong_gianhquyen": {
+        "team_bam": "",
+        "is_locked": true
+      },
+      "config": {
+        "show": false,
+        "ketvong": false
+      }
+    },
+    "question_bank": {
+      "cau_20": {
+        "1": { "cauhoi": "Câu 20đ số 1?", "dapan": "Đáp án 1" },
+        "2": { "cauhoi": "Câu 20đ số 2?", "dapan": "Đáp án 2" }
+      },
+      "cau_30": {
+        "1": { "cauhoi": "Câu 30đ số 1?", "dapan": "Đáp án 1" },
+        "2": { "cauhoi": "Câu 30đ số 2?", "dapan": "Đáp án 2" }
+      }
+    }
+  }
+}

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olympia - Màn Hình Vòng Chung</title>
+    <style>
+        /* ================= BASE STYLES ================= */
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top, #061138 0%, #010414 100%); color: white; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
+        
+        .header { width: 100%; padding: 15px 50px; font-size: 2.5rem; font-weight: bold; text-transform: uppercase; color: #ffd700; border-bottom: 3px solid #ffd700; background: rgba(0,0,0,0.6); display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; text-shadow: 0 0 15px rgba(255, 215, 0, 0.5); z-index: 10;}
+        .btn-back { color: #fff; text-decoration: none; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.3s;}
+        .btn-back:hover { color: #f2c94c; }
+        
+        /* CSS cho nút chuyển vòng bên phải */
+        .btn-next-round { color: #fff; text-decoration: none; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.3s; font-weight: bold; text-shadow: none; }
+        .btn-next-round:hover { color: #f2c94c; }
+
+        /* ================= BỐ CỤC CHÍNH ================= */
+        .main-content { flex: 1; display: flex; width: 100%; padding: 30px; box-sizing: border-box; overflow: hidden; }
+        
+        .playing-layout { display: flex; width: 100%; height: 100%; gap: 30px; background: rgba(0, 10, 30, 0.6); border: 2px solid #56ccf2; border-radius: 20px; padding: 25px; box-shadow: 0 0 30px rgba(86, 204, 242, 0.2); backdrop-filter: blur(5px);}
+        
+        /* CỘT TRÁI: LỊCH SỬ CÂU HỎI */
+        .history-sidebar { flex: 2.5; display: flex; flex-direction: column; justify-content: flex-start; gap: 15px; border-right: 2px dashed rgba(86, 204, 242, 0.3); padding-right: 25px; overflow-y: auto; }
+        .history-sidebar::-webkit-scrollbar { width: 6px; }
+        .history-sidebar::-webkit-scrollbar-thumb { background: #56ccf2; border-radius: 10px; }
+        
+        .history-title { font-size: 1.5rem; color: #56ccf2; text-transform: uppercase; font-weight: bold; text-align: center; margin-bottom: 10px; letter-spacing: 1px;}
+        .history-item { background: rgba(0, 0, 0, 0.7); border: 1px solid #444; border-left: 6px solid #28a745; padding: 15px; border-radius: 8px; font-size: 1.3rem; color: #ddd; line-height: 1.4; animation: slideIn 0.3s ease-out;}
+        .history-ans { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #555; color: #34e062; font-weight: bold; font-size: 1.2rem;}
+
+        /* CỘT PHẢI: CÂU HỎI ĐANG PHÁT */
+        .current-main { flex: 7.5; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px 40px; }
+        
+        .waiting-text { font-style: italic; color: #888; font-size: 2.5rem; animation: pulse 2s infinite; }
+        .current-q-num { font-size: 3rem; color: #ffd700; margin-bottom: 30px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(255, 215, 0, 0.6); border-bottom: 2px dashed #ffd700; padding-bottom: 10px;}
+        .current-q-text { font-size: 3.5rem; color: #fff; line-height: 1.5; text-shadow: 0 0 10px rgba(255,255,255,0.3); font-weight: bold;}
+
+        /* HIỆU ỨNG MỞ ĐÁP ÁN */
+        .ans-opened-box { margin-top: 40px; background: rgba(40, 167, 69, 0.2); border: 3px dashed #34e062; padding: 20px 40px; border-radius: 15px; display: inline-block; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 25px rgba(40,167,69,0.5); }
+        .ans-label { color: #34e062; font-size: 2rem; font-weight: bold; margin-right: 15px; }
+        .ans-text { color: #fff; font-size: 2.8rem; font-weight: bold; text-shadow: 0 0 10px #000; }
+
+        /* ================= THANH ĐIỂM SỐ DƯỚI CÙNG ================= */
+        .bottom-scores-bar { width: 100%; display: flex; justify-content: space-around; align-items: center; background: rgba(0, 10, 30, 0.95); border-top: 3px solid #ffd700; padding: 15px 0; z-index: 100; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
+        .b-team-box { display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.05); padding: 10px 40px; border-radius: 12px; border: 1px solid rgba(86, 204, 242, 0.3); min-width: 200px; }
+        .b-team-name { color: #56ccf2; font-size: 1.8rem; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px;}
+        .b-team-score { color: #ffd700; font-size: 3.5rem; font-weight: bold; text-shadow: 0 0 15px rgba(255, 215, 0, 0.6); line-height: 1;}
+
+        /* ================= ANIMATION ================= */
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.7); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes slideIn { 0% { opacity: 0; transform: translateX(-30px); } 100% { opacity: 1; transform: translateX(0); } }
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; text-shadow: 0 0 10px rgba(255,255,255,0.5); } 100% { opacity: 0.6; } }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a class="btn-back" onclick="window.location.href='../../'">◀ TRANG CHỦ</a>
+        <span>CHINH PHỤC TRI THỨC - VÒNG 1</span>
+        <!-- THÊM NÚT QUA VÒNG CHUNG NHƯ YÊU CẦU TRONG ẢNH -->
+        <a class="btn-next-round" onclick="window.location.href='../vong2/'">QUA VÒNG 2 ▶</a>
+    </div>
+
+    <div class="main-content">
+        <div class="playing-layout">
+            <!-- Cột trái: Lịch sử -->
+            <div class="history-sidebar" id="history-box">
+                <div class="history-title">LỊCH SỬ CÂU HỎI</div>
+            </div>
+            
+            <!-- Cột phải: Đang phát -->
+            <div class="current-main" id="current-box">
+                <div class="waiting-text">Đang kết nối hệ thống máy chủ...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thanh điểm 4 đội -->
+    <div class="bottom-scores-bar" id="bottom-scores-bar">
+        <div style="color: #666; font-style: italic; font-size:1.5rem;">Đang tải bảng điểm...</div>
+    </div>
+
+    <script>
+        const API_VONG1_1 = "../../api/vong1_1.php"; 
+        const SCORE_API = "../../api/diemso.php"; 
+
+        let teamMapping = {}; 
+        let lastRenderedState = ""; 
+
+        // 1. LẤY MAPPING ĐỘI
+        async function initTeamMapping() {
+            try {
+                const res = await fetch("../../api/chondoi.php");
+                const json = await res.json();
+                if (json.status === "success" && json.data) {
+                    teamMapping = {};
+                    json.data.forEach(team => {
+                        let dbCol = team.doi.charAt(0).toUpperCase() + team.doi.slice(1).toLowerCase();
+                        teamMapping[team.tendoi] = dbCol;
+                    });
+                }
+            } catch (e) { console.error("Lỗi:", e); }
+        }
+
+        // 2. ĐỒNG BỘ BẢNG ĐIỂM
+        async function fetchMySQLScores() {
+            try {
+                const res = await fetch(SCORE_API + "?action=get&_t=" + Date.now()); 
+                const json = await res.json();
+                if (json.status === "success" && json.data) {
+                    let bHtml = "";
+                    for (let teamName in teamMapping) {
+                        let dbCol = teamMapping[teamName];
+                        let score = json.data[dbCol] !== undefined ? json.data[dbCol] : 0;
+                        bHtml += `
+                            <div class="b-team-box">
+                                <div class="b-team-name">${teamName}</div>
+                                <div class="b-team-score">${score}</div>
+                            </div>
+                        `;
+                    }
+                    if(bHtml !== "") document.getElementById('bottom-scores-bar').innerHTML = bHtml;
+                }
+            } catch (e) { console.error("Lỗi:", e); } 
+            finally { setTimeout(fetchMySQLScores, 1000); }
+        }
+
+        // 3. ĐỒNG BỘ TRẠNG THÁI CÂU HỎI
+        async function fetchGameState() {
+            try {
+                const response = await fetch(API_VONG1_1 + "?action=getState&_t=" + Date.now());
+                const data = await response.json();
+                
+                if (data.status === "success") {
+                    let activeId = data.cauhoihientai || ""; 
+                    let openedQuestions = data.cauhoiopen ? data.cauhoiopen.split(',') : []; 
+                    let questions = data.danhSachCauHoi || [];
+
+                    let currentStateStr = activeId + "_" + openedQuestions.join("-");
+                    
+                    if (currentStateStr !== lastRenderedState) {
+                        lastRenderedState = currentStateStr;
+
+                        // ==========================================
+                        // RENDER LỊCH SỬ CÂU HỎI (CỘT TRÁI)
+                        // ==========================================
+                        let historyHtml = `<div class="history-title">LỊCH SỬ ĐÃ MỞ</div>`;
+                        let hasHistory = false;
+                        
+                        questions.forEach(q => {
+                            let isOpened = openedQuestions.includes("cau" + q.sttcau);
+                            if (isOpened && q.sttcau != activeId) {
+                                hasHistory = true;
+                                let dapAnText = q.danan || "Đang cập nhật..."; // Lấy từ cột danan
+                                
+                                historyHtml += `
+                                    <div class="history-item">
+                                        <b style="color:#ffd700;">Câu ${q.sttcau}:</b> ${q.cauhoi}
+                                        <div class="history-ans">✔ Đáp án: ${dapAnText}</div>
+                                    </div>
+                                `;
+                            }
+                        });
+                        
+                        if (!hasHistory) historyHtml += `<div style="color:#666; font-style:italic; text-align:center; margin-top:20px;">Trống</div>`;
+                        document.getElementById('history-box').innerHTML = historyHtml;
+
+                        // ==========================================
+                        // RENDER CÂU HỎI ĐANG PHÁT (CỘT PHẢI)
+                        // ==========================================
+                        if (activeId === "") {
+                            document.getElementById('current-box').innerHTML = '<div class="waiting-text">Đang chờ Ban Giám Khảo phát câu hỏi...</div>';
+                        } else {
+                            let currentQ = questions.find(q => q.sttcau == activeId);
+                            if (currentQ) {
+                                let isAnswerOpened = openedQuestions.includes("cau" + currentQ.sttcau);
+                                
+                                let currentHtml = `<div class="current-q-num">CÂU HỎI SỐ ${currentQ.sttcau}</div>`;
+                                currentHtml += `<div class="current-q-text">${currentQ.cauhoi}</div>`;
+                                
+                                if (isAnswerOpened) {
+                                    let dapAnText = currentQ.danan || "Đang cập nhật..."; // Lấy từ cột danan
+                                    currentHtml += `
+                                        <div class="ans-opened-box">
+                                            <span class="ans-label">✔ Đáp án chuẩn:</span>
+                                            <span class="ans-text">${dapAnText}</span> 
+                                        </div>`;
+                                }
+                                
+                                document.getElementById('current-box').innerHTML = currentHtml;
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Lỗi mạng:", error);
+            } finally { 
+                setTimeout(fetchGameState, 500); 
+            }
+        }
+
+        window.onload = async function() {
+            await initTeamMapping(); 
+            fetchMySQLScores(); 
+            fetchGameState();
+        };
+    </script>
+</body>
+</html>

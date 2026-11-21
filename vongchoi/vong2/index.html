@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Đường Lên Đỉnh Olympia - Vòng 2</title>
+
+    <style>
+        :root {
+            --cyan: #5fd8ff;
+            --cyan-line: #4fc3ef;
+            --gold: #ffcf3f;
+            --panel: rgba(2, 18, 33, 0.85);
+            --panel-border: #1f5f82;
+            --danger: #ff416c;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body { margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: radial-gradient(ellipse at 50% 0%, #0b5a82 0%, #07324d 30%, #021626 62%, #01070f 100%) fixed;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; min-height: 0; }
+        .active-screen { display: flex; }
+
+        /* ================= HEADER ================= */
+        .round-header {
+            position: relative;
+            flex: 0 0 auto;
+            padding: 14px 200px;
+            font-weight: bold;
+            text-transform: uppercase;
+            background: #00111d;
+            border-bottom: 2px solid var(--gold);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+        .logo-link, .next-round-link {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            white-space: nowrap;
+        }
+        .logo-link { left: 40px; color: var(--cyan); }
+        .next-round-link { right: 40px; color: var(--gold); }
+        .team-name-display {
+            color: var(--cyan);
+            font-size: clamp(1.4rem, 2.4vw, 2.4rem);
+            text-align: center;
+            letter-spacing: 1px;
+            text-shadow: 0 0 14px rgba(95, 216, 255, 0.55);
+        }
+
+        /* ================= LAYOUT ================= */
+        .v2-layout {
+            display: flex;
+            flex-direction: row;
+            flex: 1;
+            min-height: 0;
+            padding: 20px;
+            gap: 30px;
+            overflow: hidden;
+            width: 100%;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+        .left-col {
+            flex: 5;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            overflow-y: auto;
+            padding: 2px;
+        }
+        .right-col {
+            flex: 4;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(3, 24, 42, 0.9), rgba(1, 10, 20, 0.92));
+            border-radius: 14px;
+            border: 1px solid var(--panel-border);
+            padding: 22px;
+            overflow-y: auto;
+            box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.5);
+        }
+
+        /* ================= PUZZLE ================= */
+        .puzzle-frame {
+            width: 100%;
+            max-width: 600px;
+            padding: 12px;
+            background: #021020;
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+            flex: 0 0 auto;
+        }
+        .puzzle-wrapper {
+            position: relative;
+            width: 100%;
+            background: #05476b;
+            border: 2px solid var(--cyan-line);
+            overflow: hidden;
+        }
+        .puzzle-wrapper::before { content: ""; display: block; padding-top: 66.66%; }
+
+        .bg-image {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 1;
+        }
+        .bg-image[hidden] { display: none; }
+
+        .piece {
+            position: absolute;
+            background: linear-gradient(135deg, #07557c 0%, #033552 100%);
+            color: var(--gold);
+            font-size: clamp(2rem, 5vw, 4rem);
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s ease;
+            z-index: 2;
+            text-shadow: 0 0 12px rgba(255, 207, 63, 0.55);
+            user-select: none;
+        }
+        .p1 { top: 0;   left: 0;   width: 50%; height: 50%; border-right: 1px solid var(--cyan-line); border-bottom: 1px solid var(--cyan-line); }
+        .p2 { top: 0;   left: 50%; width: 50%; height: 50%; border-bottom: 1px solid var(--cyan-line); }
+        .p3 { top: 50%; left: 0;   width: 50%; height: 50%; border-right: 1px solid var(--cyan-line); }
+        .p4 { top: 50%; left: 50%; width: 50%; height: 50%; }
+
+        /* 4 con số nằm gần góc ngoài của mỗi mảnh để không bị vòng tròn che */
+        .p1 { align-items: flex-start; justify-content: flex-end;   padding: 18% 14% 0 0; }
+        .p2 { align-items: flex-start; justify-content: flex-start; padding: 18% 0 0 14%; }
+        .p3 { align-items: flex-end;   justify-content: flex-end;   padding: 0 14% 18% 0; }
+        .p4 { align-items: flex-end;   justify-content: flex-start; padding: 0 0 18% 14%; }
+
+        .p5 {
+            top: 50%; left: 50%;
+            width: 48%;
+            aspect-ratio: 1 / 1;
+            height: auto;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            border-radius: 50%;
+            background: radial-gradient(circle, #05476b 0%, #022a44 70%);
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 18px rgba(255, 207, 63, 0.45), inset 0 0 18px rgba(0, 0, 0, 0.4);
+            font-size: clamp(1.6rem, 4vw, 3rem);
+            padding: 0;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hide-piece { opacity: 0 !important; visibility: hidden; pointer-events: none !important; }
+        .p5.hide-piece { transform: translate(-50%, -50%) scale(0.9); }
+        .p1.hide-piece, .p2.hide-piece, .p3.hide-piece, .p4.hide-piece { transform: scale(0.95); }
+
+        .piece-dead {
+            background-color: #0b1521 !important;
+            color: #3a5068 !important;
+            border-color: #223344 !important;
+            filter: grayscale(100%);
+            opacity: 0.95 !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+            background-image: repeating-linear-gradient(45deg, #0b1521 0, #0b1521 10px, #111e2d 10px, #111e2d 20px) !important;
+            pointer-events: none;
+        }
+
+        /* ================= QUESTION BOX ================= */
+        .question-box {
+            background: linear-gradient(160deg, #0a5278 0%, #063a5a 45%, #031e33 100%);
+            border: 1px solid var(--cyan-line);
+            border-radius: 12px;
+            padding: 24px;
+            width: 100%;
+            max-width: 700px;
+            min-height: 200px;
+            flex: 1 0 auto;
+            font-size: 1.5rem;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.35);
+            transition: 0.3s;
+            word-break: break-word;
+        }
+        .subject-tag {
+            color: var(--cyan);
+            font-size: 1.3rem;
+            margin-bottom: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-align: center;
+            text-transform: uppercase;
+            background: rgba(0, 17, 29, 0.75);
+            padding: 10px 20px;
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+        }
+        .question-text-display { font-size: 2rem; font-weight: normal; color: #fff; margin-bottom: 24px; text-align: center; }
+        .waiting-text { font-style: italic; color: #8cc3df; font-size: 1.6rem; }
+
+        .input-area { width: 100%; display: flex; flex-direction: column; gap: 12px; margin-top: 10px; align-items: center; }
+        .input-area input {
+            font-size: 1.5rem; padding: 12px; border-radius: 8px;
+            border: 2px solid var(--cyan-line); text-align: center;
+            width: 80%; max-width: 400px; outline: none; color: #fff;
+            background: rgba(0, 12, 24, 0.7); font-weight: bold;
+        }
+        .input-area input:focus { box-shadow: 0 0 14px rgba(95, 216, 255, 0.5); }
+        .input-area button {
+            font-size: 1.5rem; padding: 12px; background: var(--gold); font-weight: bold;
+            border: none; border-radius: 8px; cursor: pointer; width: 80%; max-width: 400px;
+            color: #00111d; transition: 0.2s;
+        }
+        .input-area button:hover { background: #ffe07a; transform: translateY(-2px); }
+        .input-area button:disabled { opacity: 0.7; cursor: default; transform: none; }
+        .submitted-msg {
+            color: var(--cyan); font-size: 1.5rem; padding: 10px; border: 2px dashed var(--cyan-line);
+            background: rgba(95, 216, 255, 0.08); border-radius: 8px; text-align: center;
+            width: 80%; max-width: 400px; line-height: 1.5;
+        }
+
+        /* ================= CROSSWORD ================= */
+        #crossword-grid { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+        .cw-row { display: flex; align-items: flex-start; justify-content: flex-start; width: 100%; gap: 10px; }
+        .cw-label {
+            flex: 0 0 auto;
+            width: 28px; height: 28px; margin-top: 3px;
+            background: #06304d;
+            border-radius: 4px;
+            border: 1px solid var(--cyan-line);
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 0.9rem; color: var(--gold);
+        }
+        .cw-word { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
+        .cw-char {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #a6e9ff 0%, #4fc3ef 45%, #1f8fc0 100%);
+            box-shadow: inset -2px -3px 6px rgba(0, 40, 80, 0.35), 0 1px 3px rgba(0, 0, 0, 0.4);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.2rem; font-weight: bold; color: #002b45;
+        }
+
+        /* ================= FOOTER ================= */
+        .footer {
+            flex: 0 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 12px 20px;
+            background: #00111d;
+            border-top: 2px solid var(--gold);
+            z-index: 10;
+            width: 100%;
+        }
+        .stat-box {
+            display: flex; flex-direction: column; align-items: center;
+            width: 100%; max-width: 420px;
+            padding: 8px 12px;
+            background: linear-gradient(180deg, #06263f, #020f1c);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+        }
+        .stat-label { font-size: 1rem; color: var(--gold); text-transform: uppercase; font-weight: bold; margin-bottom: 4px; letter-spacing: 1px; }
+        .stat-value { font-size: 3rem; font-weight: bold; color: var(--gold); text-shadow: 0 0 16px rgba(255, 207, 63, 0.5); line-height: 1; }
+        .timer { color: var(--danger); text-shadow: 0 0 16px rgba(255, 65, 108, 0.7); }
+
+        /* ================= MOBILE ================= */
+        @media screen and (max-width: 900px) {
+            body { height: auto; min-height: 100vh; overflow-y: auto; display: block; }
+            .screen { height: auto; min-height: 100vh; }
+
+            .round-header { padding: 10px; flex-wrap: wrap; justify-content: center; text-align: center; }
+            .logo-link, .next-round-link { position: static; transform: none; font-size: 1rem; margin: 4px 15px; }
+            .team-name-display { font-size: 1.5rem; width: 100%; order: 3; margin-top: 4px; }
+
+            .v2-layout { flex-direction: column; overflow: visible; height: auto; padding: 12px; gap: 20px; }
+            .left-col, .right-col { flex: none; width: 100%; overflow: visible; }
+            .right-col { padding: 14px 10px; }
+
+            .cw-char { width: 26px; height: 26px; font-size: 0.95rem; }
+            .cw-word { gap: 3px; }
+            .cw-label { width: 24px; height: 24px; font-size: 0.8rem; margin-top: 1px; }
+
+            .question-box { padding: 15px; font-size: 1.2rem; min-height: 150px; }
+            .subject-tag { font-size: 1.1rem; margin-bottom: 10px; }
+            .question-text-display { font-size: 1.4rem; margin-bottom: 15px; }
+
+            .input-area input, .input-area button, .submitted-msg { width: 100%; max-width: 100%; font-size: 1.2rem; padding: 12px; }
+
+            .footer { padding: 8px 10px; gap: 10px; position: sticky; bottom: 0; box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.5); }
+            .stat-label { font-size: 0.8rem; }
+            .stat-value { font-size: 2.2rem; }
+        }
+
+        @media screen and (max-width: 480px) {
+            .cw-char { width: 22px; height: 22px; font-size: 0.8rem; }
+            .question-box { font-size: 1.05rem; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="v2-screen" class="screen active-screen">
+        <div class="round-header">
+            <a class="logo-link" onclick="window.open('../../')"><span>◀ QUAY LẠI</span></a>
+            <span class="team-name-display" id="display-team-name-v2"></span>
+            <a class="next-round-link" onclick="window.open('../vong3')"><span>VÒNG 3 ▶</span></a>
+        </div>
+
+        <div class="v2-layout">
+            <div class="left-col">
+                <div class="puzzle-frame">
+                    <div class="puzzle-wrapper">
+                        <img id="puzzle-img" class="bg-image" alt="" hidden>
+                        <div class="piece p1" id="p1">1</div>
+                        <div class="piece p2" id="p2">2</div>
+                        <div class="piece p3" id="p3">3</div>
+                        <div class="piece p4" id="p4">4</div>
+                        <div class="piece p5" id="p5">TT</div>
+                    </div>
+                </div>
+                <div class="question-box" id="q-box-v2"><div class="waiting-text">Đang Chờ Ban Tổ Chức</div></div>
+            </div>
+
+            <div class="right-col">
+                <div id="crossword-grid"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="stat-box"><span class="stat-label">ĐIỂM SỐ</span><span class="stat-value" id="current-score-v2">0</span></div>
+            <div class="stat-box"><span class="stat-label">THỜI GIAN</span><span class="stat-value timer" id="time-left-v2">30.0</span></div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // CẤU HÌNH API FIREBASE
+        // ==========================================
+        const API_VONG2_CFG = "../../api/vong2.json";
+        let FB_VONG2 = "";   // .../vong2
+        let FB_DIEMSO = "";  // .../diemso (cùng database)
+
+        let myFirebaseScore = null;
+        window.fbBlurredArr = [];
+
+        let globalCauHoiV2 = {};
+        let globalTrangThai = {};
+        let globalSubmittedAnswers = {};
+
+        let myMachineTeam = localStorage.getItem("olympia_team");
+        let myTeamKey = localStorage.getItem("olympia_team_key") || "";
+
+        // --- GLOBAL VARIABLES FOR V2 ---
+        let isV1Active = false, isV2Active = true;
+        let endTimeTimestampV2 = null, lastQuestionIdV2 = null, lastQuestionTextV2 = "", isSubmittingV2 = false, isAnswerSubmittedV2 = false, frozenTimeLeftV2 = null;
+        let submittedAnswerV2 = "", submittedTimeV2 = "";
+        let hasInitializedV2 = false;
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+        }
+
+        function clearLocalEndTimes() {
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                let key = localStorage.key(i);
+                if (key && key.startsWith("v2_local_end_time_")) localStorage.removeItem(key);
+            }
+        }
+
+            window.onload = async function () {
+        try {
+            const cfg = await (await fetch(API_VONG2_CFG + "?_t=" + Date.now())).json();
+            FB_VONG2  = cfg.api_url.replace(/\.json$/, "");                  // .../vong2
+            FB_DIEMSO = FB_VONG2.replace(/\/vong2$/, "") + "/diemso";        // .../diemso
+        } catch (e) {
+            console.error("Không đọc được api/vong2.json", e);
+            return;
+        }
+
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('team')) {
+                myMachineTeam = urlParams.get('team');
+                localStorage.setItem("olympia_team", myMachineTeam);
+            }
+        } catch (e) {}
+
+        if (myMachineTeam) {
+            document.getElementById('display-team-name-v2').innerText = myMachineTeam;
+            fetchScoresLoop();
+            fetchGameStateLoop();
+        } else {
+            window.location.href = 'index.php';
+            return;
+        }
+        setInterval(updateTimer, 100);
+        setInterval(silentBackgroundReset, 40000);
+    };
+
+        function silentBackgroundReset() {
+            if (lastQuestionIdV2 === null) clearLocalEndTimes();
+            processGameState();
+        }
+
+        function updateTimer() {
+            const now = new Date().getTime();
+            if (!isV2Active) return;
+            const timeEl = document.getElementById('time-left-v2');
+
+            if (!endTimeTimestampV2) { timeEl.innerText = "30.0"; return; }
+
+            if (frozenTimeLeftV2 !== null) {
+                timeEl.innerText = frozenTimeLeftV2;
+                return;
+            }
+
+            const dist = endTimeTimestampV2 - now;
+            if (dist <= 0) {
+                timeEl.innerText = "0.0";
+                const qBox = document.getElementById('q-box-v2');
+                if (lastQuestionIdV2 !== null && qBox && qBox.innerHTML.indexOf("HẾT GIỜ") === -1 && !isAnswerSubmittedV2) {
+                    qBox.innerHTML = '<div style="color:#ff416c; font-size: 3rem; font-weight: bold; text-align: center; text-shadow: 0 0 20px rgba(255,65,108,0.8);">HẾT GIỜ!</div>';
+                }
+            } else {
+                timeEl.innerText = (dist / 1000).toFixed(1);
+            }
+        }
+
+        // ==========================================
+        // FETCH DATA TỪ API FIREBASE
+        // ==========================================
+        async function fetchScoresLoop() {
+            try {
+                let key = myTeamKey || myMachineTeam || "";
+                if (key) {
+                    let dbCol = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+                    const res = await fetch(`${FB_DIEMSO}.json?_t=${Date.now()}`);
+                    const data = await res.json();
+
+                    if (data) {
+                        let newScore = data[dbCol];
+                        if (newScore !== undefined && newScore !== null) {
+                            myFirebaseScore = newScore;
+                            document.getElementById('current-score-v2').innerText = myFirebaseScore;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Lỗi đồng bộ điểm V2:", e);
+            } finally {
+                setTimeout(fetchScoresLoop, 1000);
+            }
+        }
+
+        async function fetchGameStateLoop() {
+        try {
+            const res = await fetch(`${FB_VONG2}.json?_t=${Date.now()}`);
+            const db = (await res.json()) || {};
+
+            // Ghép bài nộp thành chuỗi "[team|đáp án|thời gian]-..." như code cũ đang đọc
+            const dsch = db.danhSachCauHoi || {};
+            const subs = db.submittedAnswers || {};
+            Object.keys(dsch).forEach(k => {
+                if (!dsch[k]) return;
+                const s = subs[k] || {};
+                dsch[k].dananthisinh = Object.keys(s)
+                    .map(t => `[${t}|${s[t].answer}|${s[t].time}]`).join('-');
+            });
+
+            const data = {
+                status: "success",
+                danhSachCauHoi: dsch,
+                trangThai: db.trangThai || {},
+                submittedAnswers: subs
+            };
+
+            if (data.status === "success") {
+                    globalCauHoiV2 = data.danhSachCauHoi || {};
+                    let state = data.trangThai || {};
+                    globalTrangThai = state;
+                    globalSubmittedAnswers = data.submittedAnswers || {};
+
+                    let blurredArr = [];
+                    if (state.blurredPieces !== undefined) {
+                        blurredArr = state.blurredPieces ? state.blurredPieces.toString().split(',').filter(x => x !== "") : [];
+                        window.fbBlurredArr = blurredArr;
+                    } else {
+                        blurredArr = window.fbBlurredArr || [];
+                    }
+
+                    ['1', '2', '3', '4', '5'].forEach(num => {
+                        let pId = 'p' + num;
+                        let isOpened = (state['manh' + num] === true || state['manh' + num] === "true");
+                        let isDead = blurredArr.includes(num) || (num === '5' && (blurredArr.includes('CNV') || blurredArr.includes('TRUNGTAM')));
+
+                        let el = document.getElementById(pId);
+                        if (el) {
+                            let hideCls = isOpened ? 'hide-piece' : '';
+                            let deadCls = (isDead && !isOpened) ? 'piece-dead' : '';
+                            el.className = `piece ${pId} ${hideCls} ${deadCls}`.trim();
+                        }
+                    });
+
+                    if (!state.cauHoiHienTai || state.cauHoiHienTai === "") {
+                        const qBox = document.getElementById('q-box-v2');
+                        qBox.innerHTML = '<div class="waiting-text">Chờ câu hỏi...</div>';
+                        lastQuestionIdV2 = null; lastQuestionTextV2 = ""; endTimeTimestampV2 = null;
+                        isAnswerSubmittedV2 = false; isSubmittingV2 = false; frozenTimeLeftV2 = null;
+                        submittedAnswerV2 = ""; submittedTimeV2 = "";
+                        document.getElementById('time-left-v2').innerText = "30.0";
+                        clearLocalEndTimes();
+                    }
+                    processGameState();
+                }
+            } catch (e) {
+                console.error("Lỗi đồng bộ trạng thái V2:", e);
+            } finally {
+                setTimeout(fetchGameStateLoop, 1000);
+            }
+        }
+
+        async function submitMyAnswerV2() {
+            if (isSubmittingV2 || isAnswerSubmittedV2) return;
+            const ansInput = document.getElementById('my-answer-input-v2');
+            if (!ansInput || ansInput.value.trim() === "") return alert("Chưa nhập đáp án!");
+
+            isSubmittingV2 = true;
+            isAnswerSubmittedV2 = true;
+
+            frozenTimeLeftV2 = document.getElementById('time-left-v2').innerText;
+            ansInput.disabled = true;
+            const btn = document.getElementById('btn-submit-ans-v2');
+            if (btn) { btn.innerText = "ĐANG GỬI..."; btn.disabled = true; }
+
+            let taken = 30 - parseFloat(frozenTimeLeftV2);
+            if (isNaN(taken) || taken < 0) taken = 0;
+            const timeTaken = taken.toFixed(1) + "s";
+
+            submittedAnswerV2 = ansInput.value;
+            submittedTimeV2 = timeTaken;
+
+            try {
+                const q = globalTrangThai.cauHoiHienTai;
+                const url = `${FB_VONG2}/submittedAnswers/${encodeURIComponent(q)}/${encodeURIComponent(myMachineTeam)}.json`;
+                const res = await fetch(url, {
+                    method: "PUT",
+                    body: JSON.stringify({ answer: ansInput.value, time: timeTaken })
+                });
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                if (btn) btn.innerText = "ĐÃ GỬI";
+            } catch (e) {
+                isAnswerSubmittedV2 = false;
+                frozenTimeLeftV2 = null;
+                submittedAnswerV2 = "";
+                submittedTimeV2 = "";
+                const inp = document.getElementById('my-answer-input-v2');
+                if (inp) inp.disabled = false;
+                if (btn) { btn.innerText = "NỘP"; btn.disabled = false; }
+            }
+            isSubmittingV2 = false;
+        }
+
+        function renderCrossword(danhSachCauHoi, pieces) {
+            let html = "";
+            let pState = { "1": pieces.manh1, "2": pieces.manh2, "3": pieces.manh3, "4": pieces.manh4, "5": pieces.manh5 };
+            danhSachCauHoi.forEach(row => {
+                let id = row[0].toString().trim(); if (id === "ID" || id === "") return;
+                let len = parseInt(row[1]); if (isNaN(len)) return;
+                let cleanAns = row[3] ? row[3].toString().replace(/\s/g, '').toUpperCase() : "";
+
+                let isCenter = (id === "5" || id.toLowerCase() === "trungtam" || id.toLowerCase() === "cnv");
+                if (isCenter) return;
+
+                let wordHtml = "";
+                for (let i = 0; i < len; i++) {
+                    let char = ((pState[id] === true || pState[id] === "true") && cleanAns[i]) ? escapeHtml(cleanAns[i]) : "";
+                    wordHtml += `<div class="cw-char">${char}</div>`;
+                }
+
+                html += `<div class="cw-row"><div class="cw-label">${escapeHtml(id)}</div><div class="cw-word">${wordHtml}</div></div>`;
+            });
+            const grid = document.getElementById('crossword-grid');
+            if (grid.dataset.html !== html) {
+                grid.innerHTML = html;
+                grid.dataset.html = html;
+            }
+        }
+
+        function processGameState() {
+            if (!myMachineTeam || !isV2Active || !globalTrangThai || !globalCauHoiV2) return;
+
+            if (myFirebaseScore !== null) document.getElementById('current-score-v2').innerText = myFirebaseScore;
+
+            const img = document.getElementById('puzzle-img');
+            if (globalTrangThai.linkAnh) {
+                if (img.getAttribute('src') !== globalTrangThai.linkAnh) img.src = globalTrangThai.linkAnh;
+                img.hidden = false;
+            } else {
+                img.hidden = true;
+            }
+
+            let dsch = [];
+            for (let i = 1; i <= 5; i++) {
+                if (globalCauHoiV2[i]) {
+                    dsch.push([i, globalCauHoiV2[i].soKyTu, globalCauHoiV2[i].noiDung, globalCauHoiV2[i].dapAn]);
+                }
+            }
+            renderCrossword(dsch, globalTrangThai);
+
+            const qBox = document.getElementById('q-box-v2');
+            const currentQ = globalTrangThai.cauHoiHienTai;
+
+            if (!currentQ || currentQ === "") {
+                if (lastQuestionIdV2 !== null) qBox.innerHTML = '<div class="waiting-text">Chờ câu hỏi...</div>';
+                lastQuestionIdV2 = null; lastQuestionTextV2 = ""; endTimeTimestampV2 = null;
+                isAnswerSubmittedV2 = false; isSubmittingV2 = false; frozenTimeLeftV2 = null;
+                submittedAnswerV2 = ""; submittedTimeV2 = "";
+            } else if (globalCauHoiV2[currentQ]) {
+                let qData = globalCauHoiV2[currentQ];
+                let isNewQuestionV2 = (currentQ !== lastQuestionIdV2);
+
+                if (isNewQuestionV2) {
+                    lastQuestionIdV2 = currentQ;
+                    isAnswerSubmittedV2 = false; isSubmittingV2 = false; frozenTimeLeftV2 = null;
+                    submittedAnswerV2 = ""; submittedTimeV2 = "";
+
+                    if (hasInitializedV2) {
+                        endTimeTimestampV2 = new Date().getTime() + 30000;
+                        localStorage.setItem("v2_local_end_time_" + currentQ, endTimeTimestampV2.toString());
+                    } else {
+                        let savedEndTime = localStorage.getItem("v2_local_end_time_" + currentQ);
+                        if (savedEndTime && parseInt(savedEndTime) > new Date().getTime() - 1800000) {
+                            endTimeTimestampV2 = parseInt(savedEndTime);
+                        } else {
+                            endTimeTimestampV2 = new Date().getTime() + 30000;
+                            localStorage.setItem("v2_local_end_time_" + currentQ, endTimeTimestampV2.toString());
+                        }
+                    }
+                } else if (!endTimeTimestampV2) {
+                    let savedEndTime = localStorage.getItem("v2_local_end_time_" + currentQ);
+                    if (savedEndTime) endTimeTimestampV2 = parseInt(savedEndTime);
+                }
+
+                hasInitializedV2 = true;
+
+                // Kiểm tra thí sinh đã nộp bài chưa (từ server)
+                let rawAns = qData.dananthisinh || "";
+                if (rawAns && rawAns.includes(`[${myMachineTeam}|`)) {
+                    rawAns.split('-').forEach(p => {
+                        let match = p.match(/\[(.*?)\|(.*?)\|(.*?)\]/);
+                        if (match && match[1] === myMachineTeam) {
+                            isAnswerSubmittedV2 = true;
+                            submittedAnswerV2 = match[2];
+                            submittedTimeV2 = match[3];
+                        }
+                    });
+                }
+
+                let isTimeOutLocal = !!(endTimeTimestampV2 && (new Date().getTime() >= endTimeTimestampV2));
+                let qHtml = "";
+
+                if (isTimeOutLocal && !isAnswerSubmittedV2) {
+                    qHtml = '<div style="color:#ff416c; font-size: 3rem; font-weight: bold; text-align: center; text-shadow: 0 0 20px rgba(255,65,108,0.8);">HẾT GIỜ!</div>';
+                } else {
+                    let isCenterQ = (currentQ === "5" || currentQ.toLowerCase() === "trungtam" || currentQ.toLowerCase() === "cnv");
+
+                    if (isCenterQ) {
+                        qHtml = `<div class="question-text-display">${qData.noiDung}</div>`;
+                    } else {
+                        qHtml = `<div class="subject-tag">[ TỪ KHÓA SỐ ${escapeHtml(currentQ)} - ${escapeHtml(qData.soKyTu)} KÝ TỰ ]</div><div class="question-text-display">${qData.noiDung}</div>`;
+                    }
+
+                    let inputEl = document.getElementById('my-answer-input-v2');
+                    let currentInputVal = inputEl ? inputEl.value : "";
+
+                    if (isAnswerSubmittedV2) {
+                        if (frozenTimeLeftV2 === null) {
+                            let t = parseFloat(String(submittedTimeV2).replace('s', ''));
+                            frozenTimeLeftV2 = (30 - (isNaN(t) ? 0 : t)).toFixed(1);
+                        }
+                        qHtml += `<div class="input-area"><div class="submitted-msg">Đã nộp: ${escapeHtml(submittedAnswerV2)} <br><span style="font-size: 1rem; color: #fff;">Thời gian nộp: ${escapeHtml(submittedTimeV2)}</span></div></div>`;
+                    } else {
+                        qHtml += `<div class="input-area"><input type="text" id="my-answer-input-v2" onkeypress="if(event.key === 'Enter') submitMyAnswerV2();" autocomplete="off" value="${escapeHtml(currentInputVal)}" placeholder="Nhập đáp án..."><button id="btn-submit-ans-v2" onclick="submitMyAnswerV2()">NỘP</button></div>`;
+                    }
+                }
+
+                let forceUpdateV2 = (isAnswerSubmittedV2 && qBox.innerHTML.indexOf("Đã nộp") === -1) ||
+                                    (isTimeOutLocal && !isAnswerSubmittedV2 && qBox.innerHTML.indexOf("HẾT GIỜ") === -1);
+
+                if (isNewQuestionV2 || qData.noiDung !== lastQuestionTextV2 || forceUpdateV2) {
+                    qBox.innerHTML = qHtml;
+                    lastQuestionTextV2 = qData.noiDung;
+                    if (!isTimeOutLocal && !isAnswerSubmittedV2) {
+                        setTimeout(() => {
+                            let inp = document.getElementById('my-answer-input-v2');
+                            if (inp && !inp.disabled) inp.focus();
+                        }, 100);
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

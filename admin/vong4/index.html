@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Vòng 4.1 Về Đích</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f7; padding: 20px; color: #333; margin: 0; transition: opacity 0.3s;}
+        .header-panel { background: #800000; color: white; padding: 15px 25px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); margin-bottom: 20px;}
+        .header-panel h1 { margin: 0; font-size: 1.6rem; text-transform: uppercase; }
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .panel h3 { margin-top: 0; color: #003366; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; margin: 5px; transition: 0.2s; }
+        .btn:hover { opacity: 0.8; transform: translateY(-2px); }
+        .btn-start { background: #007bff; }
+        .btn-steal { background: #dc3545; font-size: 1.1em;}
+        .btn-ans { background: #28a745; font-size: 1.1em;}
+        .btn-star { background: #ffc107; color: black; border: 2px solid #e0a800;}
+        .btn-star.active { background: #e0a800; box-shadow: 0 0 15px gold;}
+        .control-group { margin-bottom: 15px; }
+        .control-group label { font-weight: bold; margin-right: 10px; }
+        .control-group select { padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem; }
+        
+        .score-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #ccc; }
+        .score-row:last-child { border-bottom: none; }
+        .score-btn { padding: 5px 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: white; margin: 2px; }
+
+        .btn-grid { background: #6f42c1; font-size: 1.2rem; padding: 12px 20px; width: 100%; margin-bottom: 15px; border: 2px solid #5a32a3;}
+        
+        .q-grids { display: flex; gap: 15px; margin-top: 20px; }
+        .q-col { flex: 1; padding: 15px; border-radius: 10px; border: 3px solid; background: #fafafa; }
+        .q-col-20 { border-color: #28a745; }
+        .q-col-30 { border-color: #dc3545; }
+        .q-col-title { text-align: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; }
+        .q-col-20 .q-col-title { color: #28a745; }
+        .q-col-30 .q-col-title { color: #dc3545; }
+        
+        .q-btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .q-btn { padding: 15px 0; font-size: 1.3rem; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; color: white; transition: 0.2s; }
+        .q-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
+        .q-btn-20 { background: #28a745; }
+        .q-btn-30 { background: #dc3545; }
+        
+        .q-btn.used { opacity: 0.25; pointer-events: none; filter: grayscale(100%); }
+
+        .active-q-info { background: #e6f7ff; border-left: 5px solid #007bff; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
+        .active-q-info .lbl { font-size: 0.9rem; color: #555; text-transform: uppercase; font-weight: bold; }
+        .active-q-info .val { font-size: 1.2rem; color: #003366; font-weight: bold; margin-bottom: 5px;}
+        
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; margin: 0; 
+        }
+
+        /* ================= CUSTOM POPUP STYLES ================= */
+        #custom-popup-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(5px); animation: fadeIn 0.2s ease; }
+        .custom-popup-box { background:#fff; border-radius:12px; padding:30px; width:450px; max-width:90%; box-shadow:0 15px 35px rgba(0,0,0,0.4); text-align:center; border-top: 5px solid #800000; animation: slideDown 0.3s ease; }
+        .custom-popup-box h3 { margin-top:0; color:#800000; font-size: 1.5rem; text-transform: uppercase; margin-bottom: 15px; }
+        .custom-popup-box p { font-size:1.15rem; color:#444; margin-bottom:25px; line-height:1.5; }
+        .custom-popup-btn-container { display:flex; justify-content:center; gap:15px; }
+        .custom-popup-btn { padding:10px 25px; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:1.1rem; transition: 0.2s; }
+        #custom-popup-btn-cancel { background:#6c757d; color:#fff; display:none; }
+        #custom-popup-btn-cancel:hover { background:#5a6268; }
+        #custom-popup-btn-ok { background:#800000; color:#fff; }
+        #custom-popup-btn-ok:hover { background:#660000; }
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+    </style>
+</head>
+<body>
+
+    <div id="custom-popup-overlay">
+        <div class="custom-popup-box">
+            <h3 id="custom-popup-title">THÔNG BÁO</h3>
+            <p id="custom-popup-msg"></p>
+            <div class="custom-popup-btn-container">
+                <button class="custom-popup-btn" id="custom-popup-btn-cancel">HỦY</button>
+                <button class="custom-popup-btn" id="custom-popup-btn-ok">ĐỒNG Ý</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="header-panel">
+        <h1>BẢNG ĐIỀU KHIỂN MC - VÒNG 4.1 (100% LOCAL API)</h1>
+        <div id="admin-status" style="font-weight: bold; color: #ffd700;">Đang kết nối...</div>
+    </div>
+
+    <div class="grid-container">
+        <div class="panel">
+            <h3>ĐIỀU KHIỂN TRẬN ĐẤU</h3>
+            <div class="control-group">
+                <label>Đội đang thi:</label> 
+                <select id="selTeam" onchange="changeTeam()"></select>
+            </div>
+            
+            <button class="btn btn-grid" onclick="openGrid()">🔲 2. MỞ LƯỚI CHỌN CÂU HỎI</button>
+
+            <div id="active-q-info" class="active-q-info">Đang chờ chọn câu hỏi...</div>
+
+            <button class="btn btn-star" id="btnStar" onclick="toggleStar()">⭐ BẬT/TẮT NGÔI SAO TỪ ADMIN</button>
+            <hr style="border:1px solid #eee; margin: 15px 0;">
+            <button class="btn btn-start" onclick="setGameState('TraLoi')">▶ BẮT ĐẦU 30S TRẢ LỜI</button>
+            <button class="btn btn-steal" onclick="setGameState('CuopDiem')">🚨 MỞ 5S CƯỚP ĐIỂM (Giơ tay)</button>
+            <button class="btn btn-ans" onclick="setGameState('HienDapAn')">✅ HIỆN ĐÁP ÁN CHÍNH THỨC</button>
+            
+            <button class="btn" style="background:#6c757d;" onclick="setGameState('KetThuc')">⏹ KẾT THÚC & TỔNG ĐIỂM</button>
+        </div>
+
+        <div class="panel">
+            <h3>CHẤM ĐIỂM TRỰC TIẾP</h3>
+            <div id="score-board">Đang tải danh sách đội từ API...</div>
+            
+            <h3 style="margin-top: 30px;">3. LƯỚI CHỌN CÂU HỎI</h3>
+            <button class="btn" style="background:#dc3545; margin-bottom:10px;" onclick="resetGrid()">🔄 LÀM MỚI TOÀN BỘ LƯỚI CÂU HỎI</button>
+            <div class="q-grids">
+                <div class="q-col q-col-20">
+                    <div class="q-col-title">BẢNG 20 ĐIỂM</div>
+                    <div class="q-btn-grid" id="grid-20"></div>
+                </div>
+                <div class="q-col q-col-30">
+                    <div class="q-col-title">BẢNG 30 ĐIỂM</div>
+                    <div class="q-btn-grid" id="grid-30"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === HÀM CUSTOM POPUP ===
+        window.showCustomConfirm = function(msg, title="XÁC NHẬN") {
+            return new Promise(resolve => {
+                document.getElementById('custom-popup-title').innerHTML = title;
+                document.getElementById('custom-popup-msg').innerHTML = msg;
+                document.getElementById('custom-popup-btn-cancel').style.display = 'inline-block';
+                document.getElementById('custom-popup-overlay').style.display = 'flex';
+                
+                let btnOk = document.getElementById('custom-popup-btn-ok');
+                let btnCancel = document.getElementById('custom-popup-btn-cancel');
+                
+                btnOk.onclick = function() {
+                    document.getElementById('custom-popup-overlay').style.display = 'none';
+                    resolve(true);
+                }
+                btnCancel.onclick = function() {
+                    document.getElementById('custom-popup-overlay').style.display = 'none';
+                    resolve(false);
+                }
+            });
+        }
+
+        // Đường dẫn API (Sử dụng đường dẫn cũ + API Game State mới)
+        const apiUrlHost = "../../"; 
+        const apiStateUrl = apiUrlHost + "api/vong4.php"; // File API mới quản lý Trạng Thái & Câu hỏi
+        
+        window.allScores = {}; 
+        window.teamNamesMapping = {};
+        window.activeTeams = []; 
+        window.currentDoiDangThi = "";
+        window.currentUsedQuestions = "";
+        window.isStarActiveFromAdmin = false;
+
+        // ==========================================
+        // 1. LẤY DANH SÁCH ĐỘI VÀ ÉP CHUẨN KEY ĐIỂM
+        // ==========================================
+        async function fetchTeamNames() {
+            try {
+                let res = await fetch(apiUrlHost + 'api/chondoi.php');
+                let json = await res.json();
+                
+                if (json.status === 'success' && json.data.length > 0) {
+                    let selTeam = document.getElementById('selTeam');
+                    selTeam.innerHTML = ''; 
+                    
+                    window.teamNamesMapping = {};
+                    window.activeTeams = [];
+                    
+                    json.data.forEach((teamInfo, index) => {
+                        let doiCol = `Doi${index + 1}`; 
+                        let tenDoi = teamInfo.tendoi || `Đội ${index + 1}`; 
+                        
+                        window.teamNamesMapping[doiCol] = tenDoi;
+                        window.activeTeams.push(doiCol);
+                        
+                        let opt = document.createElement('option');
+                        opt.value = tenDoi; 
+                        opt.innerHTML = tenDoi;
+                        selTeam.appendChild(opt);
+                    });
+                    
+                    renderScoreBoard();
+                } else {
+                    document.getElementById('score-board').innerHTML = '<div style="color:red; font-weight:bold; font-size:1.1rem; padding: 20px 0;">Không tìm thấy đội tham gia nào từ API!</div>';
+                }
+            } catch (err) {
+                console.error("Lỗi lấy danh sách đội:", err);
+                document.getElementById('score-board').innerHTML = '<div style="color:red; font-weight:bold; font-size:1.1rem; padding: 20px 0;">Không thể kết nối đến api/chondoi.php!</div>';
+            }
+        }
+
+        // ==========================================
+        // 2. RENDER BẢNG ĐIỂM
+        // ==========================================
+        function renderScoreBoard() {
+            let currentInputs = {};
+            document.querySelectorAll('input[id^="score-input-"]').forEach(inp => {
+                currentInputs[inp.id] = inp.value;
+            });
+
+            let scoreHtml = '';
+            
+            window.activeTeams.forEach((teamCol) => {
+                let tName = window.teamNamesMapping[teamCol];
+                let tScore = window.allScores[teamCol] !== undefined ? window.allScores[teamCol] : 0;
+                
+                scoreHtml += `
+                    <div class="score-row" style="align-items: center; padding: 15px 0; border-bottom: 1px dashed #ccc;">
+                        <div style="font-size: 1.3rem; margin-top: 5px; flex: 1;">
+                            <b>${tName}</b> <br> 
+                            <span style="color:#007bff; font-weight:900; font-size:2rem;" id="display-score-${teamCol}">${tScore} đ</span>
+                        </div>
+                        <div style="display:flex; flex-wrap:nowrap; gap:12px; justify-content:flex-end; align-items: center;">
+                            <button class="score-btn" style="background:#dc3545; font-size: 1.8rem; font-weight: bold; width: 45px; height: 45px; border-radius: 8px; cursor: pointer; display:flex; justify-content:center; align-items:center;" onclick="changeScore('${teamCol}', -1)">-</button>
+                            <input type="number" id="score-input-${teamCol}" value="10" style="width: 70px; height: 39px; text-align: center; font-size: 1.6rem; font-weight: bold; border-radius: 8px; border: 2px solid #ccc; outline: none; color: #003366;">
+                            <button class="score-btn" style="background:#28a745; font-size: 1.8rem; font-weight: bold; width: 45px; height: 45px; border-radius: 8px; cursor: pointer; display:flex; justify-content:center; align-items:center;" onclick="changeScore('${teamCol}', 1)">+</button>
+                        </div>
+                    </div>`;
+            });
+            
+            document.getElementById('score-board').innerHTML = scoreHtml;
+
+            Object.keys(currentInputs).forEach(id => {
+                let inp = document.getElementById(id);
+                if(inp) inp.value = currentInputs[id];
+            });
+        }
+
+        // ==========================================
+        // 3. FETCH VÀ CẬP NHẬT ĐIỂM QUA API SQL
+        // ==========================================
+        async function fetchScores() {
+            if (window.activeTeams.length === 0) return;
+
+            try {
+                let res = await fetch(apiUrlHost + 'api/diemso.php?action=get');
+                let json = await res.json();
+                
+                if (json.status === 'success') {
+                    let hasChanged = false;
+                    
+                    window.activeTeams.forEach(col => {
+                        if (json.data[col] !== undefined) {
+                            let newScore = parseInt(json.data[col]);
+                            if (window.allScores[col] !== newScore) {
+                                window.allScores[col] = newScore;
+                                hasChanged = true;
+                                
+                                let scoreDisplay = document.getElementById(`display-score-${col}`);
+                                if (scoreDisplay) scoreDisplay.innerText = `${newScore} đ`;
+                            }
+                        }
+                    });
+                    
+                    if (hasChanged && document.getElementById('score-board').innerHTML.includes('Đang tải')) {
+                         renderScoreBoard();
+                    }
+                }
+            } catch (err) {
+                console.error("Lỗi fetch điểm API:", err);
+            }
+        }
+
+        window.changeScore = function(teamCol, sign) {
+            let inputEl = document.getElementById('score-input-' + teamCol);
+            if(inputEl) {
+                let pts = parseInt(inputEl.value) || 0;
+                if(pts > 0) window.updateScore(teamCol, pts * sign);
+            }
+        }
+
+        window.updateScore = async function(teamCol, pts) { 
+            let currentScore = window.allScores[teamCol] !== undefined ? window.allScores[teamCol] : 0;
+            let newScore = currentScore + pts;
+
+            try {
+                let res = await fetch(`${apiUrlHost}api/diemso.php?action=update&team=${teamCol}&score=${newScore}`);
+                let json = await res.json();
+                if (json.status === 'success') {
+                    window.allScores[teamCol] = newScore;
+                    let scoreDisplay = document.getElementById(`display-score-${teamCol}`);
+                    if(scoreDisplay) scoreDisplay.innerText = `${newScore} đ`;
+                } else {
+                    console.error("Lỗi cập nhật điểm:", json.message);
+                }
+            } catch (err) {
+                console.error("Lỗi kết nối API cập nhật điểm:", err);
+            }
+        }
+
+        // ==========================================
+        // 4. API THAY THẾ FIREBASE (STATE & CÂU HỎI)
+        // ==========================================
+        
+        // Gửi thay đổi state lên Server
+        async function sendStateUpdate(dataToUpdate) {
+            try {
+                await fetch(apiStateUrl + "?action=update", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dataToUpdate)
+                });
+            } catch (error) {
+                console.error("Lỗi cập nhật State:", error);
+            }
+        }
+
+        // Lấy state từ Server liên tục 0.5s/lần
+        async function fetchGameState() {
+            try {
+                let res = await fetch(apiStateUrl + "?action=get");
+                let json = await res.json();
+                
+                if(json.status !== 'success') {
+                    document.getElementById('admin-status').innerText = "⚠️ LỖI: API State không khả dụng!";
+                    document.getElementById('admin-status').style.color = "#ff4b2b";
+                    return;
+                }
+
+                const fullData = json.data || {};
+                const dataStatus = fullData.TrangThaiV4 || {};
+                const questions = fullData.CauHoiV4 || {};
+
+                window.currentDoiDangThi = dataStatus.doiDangThi;
+                window.currentUsedQuestions = dataStatus.usedQuestions || "";
+                window.isStarActiveFromAdmin = dataStatus.ngoiSao || false;
+
+                document.getElementById('admin-status').innerText = `Trạng thái: [${dataStatus.trangThaiGame || 'Chờ'}] | Đang thi: ${dataStatus.doiDangThi || 'Chưa chọn'}`;
+                document.getElementById('admin-status').style.color = "#ffd700";
+                
+                let selTeam = document.getElementById('selTeam');
+                if(selTeam.options.length > 0 && selTeam.value !== dataStatus.doiDangThi && dataStatus.doiDangThi) {
+                     selTeam.value = dataStatus.doiDangThi;
+                }
+                
+                renderGrids(window.currentUsedQuestions);
+
+                let btnStar = document.getElementById('btnStar');
+                let usedStarList = dataStatus.danhSachSao || "";
+                let usedStarArray = usedStarList ? usedStarList.split(',').map(s => s.trim()) : [];
+                let currentTeamHasUsedStar = window.currentDoiDangThi && usedStarArray.includes(window.currentDoiDangThi);
+                
+                if (window.isStarActiveFromAdmin) {
+                    btnStar.style.display = "inline-block";
+                    btnStar.classList.add('active');
+                    btnStar.innerText = "⭐ ĐANG BẬT NGÔI SAO HY VỌNG";
+                } else {
+                    btnStar.style.display = "inline-block";
+                    btnStar.classList.remove('active');
+                    if (currentTeamHasUsedStar) {
+                        btnStar.innerText = "⭐ ĐÃ DÙNG (BẤM ĐỂ ÉP BẬT LẠI)";
+                    } else {
+                        btnStar.innerText = "⭐ BẬT/TẮT NGÔI SAO TỪ ADMIN";
+                    }
+                }
+
+                let activeQInfo = document.getElementById('active-q-info');
+                if (dataStatus.cauHoiHienTai && questions[dataStatus.cauHoiHienTai]) {
+                    const qObj = questions[dataStatus.cauHoiHienTai];
+                    activeQInfo.innerHTML = `
+                        <div class="lbl">Đang chọn: ID ${dataStatus.cauHoiHienTai} | ${dataStatus.mucDiem} Điểm</div>
+                        <div class="val">${qObj.noiDung || "(Chưa có nội dung câu hỏi)"}</div>
+                        <div class="lbl">Đáp án chương trình:</div>
+                        <div class="val" style="color:#dc3545;">${qObj.dapAn || "(Chưa có đáp án)"}</div>
+                    `;
+                } else { 
+                    activeQInfo.innerHTML = "Chưa có câu hỏi. Hãy bấm nút MỞ LƯỚI để thí sinh chọn!"; 
+                }
+            } catch (error) {
+                document.getElementById('admin-status').innerText = "⚠️ LỖI KẾT NỐI API STATE!";
+                document.getElementById('admin-status').style.color = "#ff4b2b";
+            }
+        }
+
+        function renderGrids(usedStr) {
+            let usedArr = usedStr ? usedStr.split(',') : [];
+            let grid20 = document.getElementById('grid-20'); 
+            let grid30 = document.getElementById('grid-30');
+            
+            let html20 = ''; 
+            let html30 = '';
+            
+            for(let i = 1; i <= 12; i++) {
+                let id20 = `20_${i}`;
+                let id30 = `30_${i}`;
+                
+                let class20 = usedArr.includes(id20) ? 'q-btn q-btn-20 used' : 'q-btn q-btn-20';
+                let class30 = usedArr.includes(id30) ? 'q-btn q-btn-30 used' : 'q-btn q-btn-30';
+                
+                html20 += `<button class="${class20}" onclick="setQuestion('${id20}', 20)">${i}</button>`;
+                html30 += `<button class="${class30}" onclick="setQuestion('${id30}', 30)">${i}</button>`;
+            }
+            
+            grid20.innerHTML = html20; 
+            grid30.innerHTML = html30;
+        }
+
+        window.changeTeam = function() {
+            const team = document.getElementById('selTeam').value;
+            sendStateUpdate({ trangThaiGame: "ChuanBi", doiDangThi: team, cauHoiHienTai: "", ngoiSao: false, thoiGianKetThuc: 0, timerTrigger: 0 });
+        }
+
+        window.resetGrid = async function() {
+            let isConfirm = await showCustomConfirm("Bạn có chắc chắn muốn <b>làm mới toàn bộ Lưới</b>?<br>Tất cả các câu hỏi đã chọn trước đó sẽ sáng lại.");
+            if(!isConfirm) return;
+            sendStateUpdate({ usedQuestions: "" });
+        }
+
+        window.openGrid = function() {
+            const team = document.getElementById('selTeam').value;
+            sendStateUpdate({ trangThaiGame: "ChonCauHoi", doiDangThi: team, cauHoiHienTai: "", timerTrigger: 0 });
+        }
+        
+        window.toggleStar = function() { 
+            sendStateUpdate({ ngoiSao: !window.isStarActiveFromAdmin });
+        }
+        
+        window.setGameState = function(state) { 
+            const team = document.getElementById('selTeam').value;
+            let updateData = { trangThaiGame: state, doiDangThi: team }; 
+            
+            let triggerID = new Date().getTime();
+            if (state === 'TraLoi') {
+                updateData.thoiGianKetThuc = 30000; 
+                updateData.timerTrigger = triggerID; 
+            } else if (state === 'CuopDiem') {
+                updateData.thoiGianKetThuc = 5000;  
+                updateData.timerTrigger = triggerID;
+            } else {
+                updateData.thoiGianKetThuc = 0; 
+                updateData.timerTrigger = 0;
+            }
+            
+            sendStateUpdate(updateData);
+        }
+        
+        window.setQuestion = function(id, diem) {
+            const team = document.getElementById('selTeam').value;
+            let usedArr = window.currentUsedQuestions ? window.currentUsedQuestions.split(',') : [];
+            if(!usedArr.includes(id)) usedArr.push(id);
+            
+            sendStateUpdate({ 
+                cauHoiHienTai: id, 
+                mucDiem: diem, 
+                doiDangThi: team, 
+                trangThaiGame: "Cho", 
+                usedQuestions: usedArr.join(','), 
+                ngoiSao: false, 
+                thoiGianKetThuc: 0, 
+                timerTrigger: 0 
+            });
+        }
+
+        // Bắt đầu vòng lặp Fetch Data sau khi tải xong danh sách Đội
+        fetchTeamNames().then(() => {
+            setInterval(fetchScores, 500); 
+            setInterval(fetchGameState, 500); // Lấy State Game và Câu hỏi liên tục thay cho Firebase
+        });
+
+    </script>
+</body>
+</html>

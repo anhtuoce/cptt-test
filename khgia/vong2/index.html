@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olympia - Màn Hình Khán Giả Vòng 2</title>
+    
+    <!-- THƯ VIỆN BẮN PHÁO HOA NHẸ VÀ MƯỢT -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+ 
+<style>
+    /* =========================================
+       1. HỆ THỐNG MÀU SẮC
+    ========================================= */
+    :root {
+        --navy: #031c30;
+        --navy-dark: #000b16;
+        --blue: #075078;
+        --blue-light: #0b6691;
+        --cyan: #75dfff;
+        --cyan-bright: #a1edff;
+        --gold: #ffd34e;
+        --gold-light: #ffe58a;
+        --white: #f4faff;
+        --muted: #a9c1d0;
+        --border: rgba(117, 223, 255, 0.75);
+        --glow-cyan: 0 0 18px rgba(117, 223, 255, 0.3);
+        --glow-gold: 0 0 18px rgba(255, 211, 78, 0.35);
+    }
+
+    /* =========================================
+       2. RESET VÀ NỀN CHUNG
+    ========================================= */
+    * {
+        box-sizing: border-box;
+    }
+
+    html {
+        min-height: 100%;
+        background: var(--navy-dark);
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        min-height: 100svh;
+        width: 100%;
+        font-family: "Segoe UI", Arial, sans-serif;
+        color: var(--white);
+        background:
+            radial-gradient(
+                ellipse at 50% 0%,
+                rgba(10, 112, 157, 0.7) 0%,
+                rgba(5, 61, 91, 0.55) 30%,
+                transparent 68%
+            ),
+            linear-gradient(
+                180deg,
+                #06334f 0%,
+                #03243b 48%,
+                #000b16 100%
+            );
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    /* =========================================
+       3. HEADER
+    ========================================= */
+    .header {
+        width: 100%;
+        min-height: 94px;
+        padding: 12px 3.5%;
+        font-size: 2rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        color: var(--gold);
+        border-bottom: 3px solid var(--gold);
+        background: rgba(0, 15, 28, 0.92);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        text-shadow: var(--glow-gold);
+        box-shadow: 0 4px 22px rgba(0, 0, 0, 0.25);
+        position: relative;
+        z-index: 10;
+    }
+
+    .header > div:nth-child(2) {
+        text-align: center;
+        color: var(--cyan);
+        text-shadow:
+            0 0 8px rgba(117, 223, 255, 0.65),
+            0 0 22px rgba(117, 223, 255, 0.3);
+        letter-spacing: 1px;
+    }
+
+    .btn-next {
+        color: var(--gold);
+        text-decoration: none;
+        font-size: 1.5rem;
+        font-weight: 900;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        white-space: nowrap;
+        transition: all 0.25s ease;
+    }
+
+    .btn-next:hover {
+        color: var(--cyan);
+        text-shadow: 0 0 15px var(--cyan);
+        transform: translateY(-2px);
+    }
+
+    #audience-timer {
+        color: var(--gold) !important;
+        text-shadow: var(--glow-gold) !important;
+    }
+
+    /* =========================================
+       4. BỐ CỤC CHÍNH
+    ========================================= */
+    .main-content {
+        flex: 1;
+        display: flex;
+        width: 100%;
+        max-width: 1800px;
+        min-height: 650px;
+        padding: 28px;
+        box-sizing: border-box;
+        gap: 25px;
+        overflow: visible;
+        align-items: stretch;
+    }
+
+    .left-panel {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 22px;
+    }
+
+    .right-panel {
+        flex: 1.2;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        background: rgba(0, 13, 27, 0.65);
+        border-radius: 16px;
+        padding: 22px;
+        border: 1px solid rgba(117, 223, 255, 0.25);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    /* =========================================
+       5. BẢNG HÌNH ẢNH VÀ MẢNH GHÉP
+    ========================================= */
+    .puzzle-wrapper {
+        background: rgba(0, 17, 33, 0.85);
+        border: 2px solid var(--cyan);
+        padding: 15px;
+        border-radius: 14px;
+        box-shadow:
+            0 0 22px rgba(117, 223, 255, 0.22),
+            inset 0 0 15px rgba(117, 223, 255, 0.06);
+        transition: all 0.5s ease-in-out;
+    }
+
+    .puzzle-wrapper.zoomed {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(1.4);
+        z-index: 9999;
+        box-shadow:
+            0 0 60px rgba(117, 223, 255, 0.8),
+            0 0 100px rgba(255, 211, 78, 0.45);
+        background: rgba(0, 11, 22, 0.98);
+    }
+
+    .puzzle-box {
+        position: relative;
+        width: 600px;
+        height: 400px;
+        background-color: #062b42;
+        background-size: cover;
+        background-position: center;
+        border: 2px solid var(--cyan);
+        overflow: hidden;
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .piece {
+        position: absolute;
+        background: linear-gradient(145deg, #075078, #03243d);
+        border: 1px solid var(--cyan);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        font-weight: 900;
+        color: var(--gold);
+        text-shadow: 0 0 12px rgba(255, 211, 78, 0.6);
+        transition: opacity 0.8s ease;
+        z-index: 2;
+    }
+
+    .piece.revealed {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .p1 {
+        top: 0;
+        left: 0;
+        width: 50%;
+        height: 50%;
+    }
+
+    .p2 {
+        top: 0;
+        left: 50%;
+        width: 50%;
+        height: 50%;
+    }
+
+    .p3 {
+        top: 50%;
+        left: 0;
+        width: 50%;
+        height: 50%;
+    }
+
+    .p4 {
+        top: 50%;
+        left: 50%;
+        width: 50%;
+        height: 50%;
+    }
+
+    .p-cnv {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 325px;
+        height: 325px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #075078, #00172b);
+        border: 3px solid var(--gold);
+        z-index: 3;
+        box-shadow:
+            0 0 18px rgba(255, 211, 78, 0.45),
+            inset 0 0 20px rgba(117, 223, 255, 0.15);
+    }
+
+    .p-cnv.revealed {
+        opacity: 0;
+    }
+
+    /* Mảnh ghép bị khóa */
+    .piece-dead {
+        background: #101e29 !important;
+        color: #50616d !important;
+        border-color: #364957 !important;
+        filter: grayscale(100%);
+        opacity: 0.98 !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+        background-image:
+            repeating-linear-gradient(
+                45deg,
+                #101e29 0,
+                #101e29 10px,
+                #192b38 10px,
+                #192b38 20px
+            ) !important;
+        pointer-events: none;
+    }
+
+    .word-row.dead {
+        opacity: 0.3;
+        filter: grayscale(100%);
+    }
+
+    /* =========================================
+       6. BẢNG CÂU HỎI
+    ========================================= */
+    .question-board {
+        background:
+            linear-gradient(
+                135deg,
+                rgba(10, 91, 132, 0.8),
+                rgba(2, 31, 54, 0.95)
+            );
+        border: 2px solid var(--cyan);
+        border-radius: 14px;
+        padding: 24px;
+        width: 100%;
+        min-height: 180px;
+        text-align: center;
+        box-shadow:
+            0 0 25px rgba(117, 223, 255, 0.2),
+            inset 0 0 20px rgba(117, 223, 255, 0.05);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .q-subject {
+        color: var(--gold);
+        font-size: 1.05rem;
+        font-weight: 800;
+        letter-spacing: 2px;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+    }
+
+    .q-text {
+        color: var(--white);
+        font-size: 1.6rem;
+        line-height: 1.5;
+        font-weight: 700;
+    }
+
+    .question-board > div[style] {
+        color: var(--muted) !important;
+    }
+
+    .question-board > div[style*="color"] {
+        text-shadow: 0 0 10px rgba(117, 223, 255, 0.25);
+    }
+
+    /* Đáp án đúng */
+    .question-board div[style*="34e062"] {
+        color: var(--gold) !important;
+        text-shadow: var(--glow-gold) !important;
+        border-color: var(--cyan) !important;
+    }
+
+    /* =========================================
+       7. BẢNG HIỂN THỊ CÁC TỪ KHÓA
+    ========================================= */
+    .words-board {
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+        align-items: flex-start;
+        padding: 10px 15px;
+        min-height: 250px;
+    }
+
+    .word-row {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        transition: 0.3s;
+    }
+
+    .circle {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: 900;
+        font-size: 1.2rem;
+        box-shadow:
+            inset -3px -3px 6px rgba(0, 0, 0, 0.35),
+            0 0 10px rgba(117, 223, 255, 0.15);
+        text-transform: uppercase;
+    }
+
+    .circle.blue {
+        background: radial-gradient(
+            circle at 30% 30%,
+            #8be9ff,
+            #0879aa
+        );
+        color: #001b2c;
+    }
+
+    .circle.red {
+        background: radial-gradient(
+            circle at 30% 30%,
+            #ffe58a,
+            #d69b18
+        );
+        color: #241800;
+    }
+
+    .circle.empty-revealed {
+        background: radial-gradient(
+            circle at 30% 30%,
+            #ffffff,
+            #b9eafa
+        );
+        color: #03243b;
+        box-shadow: 0 0 12px rgba(117, 223, 255, 0.4);
+    }
+
+    .row-label {
+        background: linear-gradient(135deg, #08729f, #032f4d);
+        border: 1px solid var(--cyan);
+        color: var(--gold);
+        padding: 6px 11px;
+        border-radius: 6px;
+        font-weight: 900;
+        margin-right: 8px;
+        min-width: 35px;
+        text-align: center;
+    }
+
+    /* =========================================
+       8. BẢNG CHƯỚNG NGẠI VẬT
+    ========================================= */
+    .cnv-board {
+        background: linear-gradient(
+            135deg,
+            rgba(8, 83, 121, 0.45),
+            rgba(0, 18, 34, 0.9)
+        );
+        border: 2px dashed var(--cyan);
+        border-radius: 12px;
+        padding: 20px 15px;
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: var(--white);
+        text-transform: uppercase;
+        text-align: center;
+        box-shadow: var(--glow-cyan);
+        transition: 0.5s;
+    }
+
+    .cnv-board span[style*="f2c94c"] {
+        color: var(--gold) !important;
+    }
+
+    .cnv-board span[style*="34e062"] {
+        color: var(--gold-light) !important;
+        text-shadow: var(--glow-gold) !important;
+    }
+
+    .cnv-board span[style*="56ccf2"] {
+        color: var(--cyan) !important;
+        text-shadow: var(--glow-cyan) !important;
+    }
+
+    /* =========================================
+       9. BẢNG ĐIỂM CÁC ĐỘI
+    ========================================= */
+    .teams-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 15px;
+        flex: 1;
+    }
+
+    .team-card {
+        background: linear-gradient(
+            145deg,
+            rgba(5, 49, 75, 0.85),
+            rgba(0, 14, 28, 0.96)
+        );
+        border: 1px solid rgba(117, 223, 255, 0.55);
+        border-radius: 12px;
+        padding: 18px 15px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 5px 18px rgba(0, 0, 0, 0.25);
+        transition: all 0.25s ease;
+    }
+
+    .team-card:hover {
+        border-color: var(--cyan);
+        box-shadow: var(--glow-cyan);
+        transform: translateY(-3px);
+    }
+
+    .team-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(
+            90deg,
+            var(--blue),
+            var(--cyan),
+            var(--gold)
+        );
+    }
+
+    .team-name {
+        color: var(--gold);
+        font-size: 1.4rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        text-shadow: var(--glow-gold);
+    }
+
+    .team-score {
+        font-size: 3.5rem;
+        color: var(--gold);
+        font-weight: 900;
+        margin: 8px 0;
+        line-height: 1;
+        text-shadow: var(--glow-gold);
+    }
+
+    .team-answer-box {
+        margin-top: auto;
+        padding: 12px;
+        background: rgba(117, 223, 255, 0.06);
+        border: 1px dashed rgba(117, 223, 255, 0.4);
+        border-radius: 8px;
+        min-height: 65px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .status-waiting {
+        color: var(--muted);
+        font-style: italic;
+        font-size: 1.05rem;
+    }
+
+    .status-submitted {
+        color: var(--cyan);
+        font-weight: 900;
+        font-size: 1.6rem;
+        text-transform: uppercase;
+        overflow-wrap: anywhere;
+    }
+
+    .status-time {
+        color: var(--gold);
+        font-size: 1.05rem;
+        margin-top: 7px;
+    }
+
+    .status-submitted[style*="28a745"] {
+        color: var(--cyan) !important;
+    }
+
+    /* =========================================
+       10. HIỆU ỨNG VÀ TRẠNG THÁI
+    ========================================= */
+    ::selection {
+        background: var(--cyan);
+        color: var(--navy-dark);
+    }
+
+    /* Thanh cuộn */
+    ::-webkit-scrollbar {
+        width: 9px;
+        height: 9px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--navy-dark);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #08739c;
+        border-radius: 10px;
+        border: 2px solid var(--navy-dark);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--cyan);
+    }
+
+    /* =========================================
+       11. RESPONSIVE - MÁY TÍNH BẢNG
+    ========================================= */
+    @media (max-width: 1200px) {
+        .main-content {
+            gap: 18px;
+            padding: 20px;
+        }
+
+        .puzzle-box {
+            width: min(100%, 520px);
+            height: auto;
+            aspect-ratio: 3 / 2;
+        }
+
+        .p-cnv {
+            width: 52%;
+            height: auto;
+            aspect-ratio: 1;
+        }
+
+        .header {
+            font-size: 1.6rem;
+        }
+
+        .btn-next {
+            font-size: 1.2rem;
+        }
+
+        .circle {
+            width: 34px;
+            height: 34px;
+            font-size: 1rem;
+        }
+    }
+
+    /* =========================================
+       12. RESPONSIVE - ĐIỆN THOẠI
+    ========================================= */
+    @media (max-width: 768px) {
+        .header {
+            min-height: 75px;
+            padding: 12px 15px;
+            font-size: 1rem;
+            gap: 8px;
+        }
+
+        .header > div:first-child {
+            width: 0 !important;
+            display: none;
+        }
+
+        .header > div:nth-child(2) {
+            flex: 1;
+            font-size: 1.1rem;
+        }
+
+        .btn-next {
+            font-size: 0.85rem;
+        }
+
+        #audience-timer {
+            font-size: 1.5rem !important;
+        }
+
+        .main-content {
+            flex-direction: column;
+            padding: 15px;
+            gap: 20px;
+            min-height: auto;
+        }
+
+        .left-panel,
+        .right-panel {
+            width: 100%;
+            flex: none;
+        }
+
+        .puzzle-wrapper {
+            width: 100%;
+            padding: 8px;
+        }
+
+        .puzzle-box {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 3 / 2;
+        }
+
+        .p-cnv {
+            width: 52%;
+            height: auto;
+            aspect-ratio: 1;
+            font-size: 2.5rem;
+        }
+
+        .piece {
+            font-size: 2.5rem;
+        }
+
+        .question-board {
+            min-height: 160px;
+            padding: 18px;
+        }
+
+        .q-text {
+            font-size: 1.2rem;
+        }
+
+        .right-panel {
+            padding: 15px;
+        }
+
+        .words-board {
+            padding: 8px 0;
+            gap: 10px;
+        }
+
+        .circle {
+            width: 30px;
+            height: 30px;
+            font-size: 0.9rem;
+        }
+
+        .teams-grid {
+            gap: 10px;
+        }
+
+        .team-card {
+            padding: 15px 10px;
+        }
+
+        .team-name {
+            font-size: 1.05rem;
+        }
+
+        .team-score {
+            font-size: 2.5rem;
+        }
+
+        .status-submitted {
+            font-size: 1.2rem;
+        }
+
+        .cnv-board {
+            font-size: 1.1rem;
+        }
+
+        .puzzle-wrapper.zoomed {
+            transform: translate(-50%, -50%) scale(0.95);
+            width: 90%;
+        }
+    }
+
+    /* =========================================
+       13. RESPONSIVE - ĐIỆN THOẠI NHỎ
+    ========================================= */
+    @media (max-width: 400px) {
+        .header {
+            padding: 10px;
+        }
+
+        .header > div:nth-child(2) {
+            font-size: 0.9rem;
+        }
+
+        .btn-next {
+            font-size: 0.75rem;
+        }
+
+        .main-content {
+            padding: 10px;
+        }
+
+        .circle {
+            width: 25px;
+            height: 25px;
+            font-size: 0.8rem;
+        }
+
+        .word-row {
+            gap: 4px;
+        }
+
+        .team-score {
+            font-size: 2rem;
+        }
+    }
+
+    /* =========================================
+       14. MÀN HÌNH THẤP
+    ========================================= */
+    @media (max-height: 750px) and (min-width: 769px) {
+        .header {
+            min-height: 75px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+        }
+
+        .main-content {
+            padding: 15px;
+            gap: 15px;
+        }
+
+        .puzzle-box {
+            width: min(480px, 100%);
+            height: auto;
+            aspect-ratio: 3 / 2;
+        }
+
+        .p-cnv {
+            width: 52%;
+            height: auto;
+            aspect-ratio: 1;
+        }
+
+        .right-panel {
+            padding: 15px;
+            gap: 12px;
+        }
+
+        .words-board {
+            min-height: 180px;
+        }
+
+        .circle {
+            width: 34px;
+            height: 34px;
+        }
+    }
+</style>
+
+</head>
+<body>
+
+    <div class="header">
+        <div style="width: 160px;"></div> 
+        <div style="display: flex; flex-direction: column; align-items: center;">
+            <span>CHINH PHỤC TRI THỨC - VÒNG 2</span>
+            <div id="audience-timer" style="font-size: 2.2rem; color: #ff416c; margin-top: 5px; text-shadow: 0 0 15px rgba(255, 65, 108, 0.8); font-family: monospace; font-weight: bold; line-height: 1; visibility: hidden;">30.0</div>
+        </div>
+        <a class="btn-next" onclick="window.open('../vong3', '_blank')">QUA VÒNG 3 ▶</a>
+    </div>
+
+    <div class="main-content" id="main-content">
+        <div class="left-panel">
+            <div class="puzzle-wrapper" id="puzzle-wrapper">
+                <div class="puzzle-box" id="puzzle-img">
+                    <div id="piece-1" class="piece p1">1</div>
+                    <div id="piece-2" class="piece p2">2</div>
+                    <div id="piece-3" class="piece p3">3</div>
+                    <div id="piece-4" class="piece p4">4</div>
+                    <div id="piece-5" class="piece p-cnv">TT</div>
+                </div>
+            </div>
+
+            <div class="question-board" id="q-board">
+                <div style="color:#aaa; font-style:italic; font-size: 1.2rem;">Đang kết nối máy chủ...</div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="words-board" id="words-board"></div>
+            
+            <div class="cnv-board" id="cnv-board">
+                ĐANG TẢI DỮ LIỆU...
+            </div>
+
+            <div class="teams-grid" id="teams-grid"></div>
+        </div>
+    </div>
+
+ <script>
+    // ==========================================
+    // 1. CẤU HÌNH: CHỈ ĐỌC api/vong2.json
+    // ==========================================
+    const apiUrlHost = "../../";
+    const FB = {};
+
+    async function loadFbConfig() {
+        const cfg = await (await fetch(`${apiUrlHost}api/vong2.json?_t=${Date.now()}`)).json();
+        FB.vong2 = cfg.api_url.replace(/\.json$/, "");                  // .../vong2
+        FB.diemso = FB.vong2.replace(/\/vong2$/, "") + "/diemso";       // .../diemso
+    }
+
+    function escapeHtml(str) {
+        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    let fbCauHoiHienTai = null;
+    let fbShowAnswer = false;
+    window.fbBlurredArr = [];
+
+    let globalCauHoiV2 = {};
+    let globalTrangThai = {};
+
+    let endTimeTimestampV2 = null;
+    let lastQuestionIdV2 = null;
+
+    let currentScores = {};
+    let currentShowAnswer = false;
+    let wasManh5Opened = false;
+
+    window.teamNamesMapping = {};
+    window.activeTeams = [];
+
+    // ==========================================
+    // ĐỒNG HỒ KHÁN GIẢ
+    // ==========================================
+    function updateAudienceTimer() {
+        let timerEl = document.getElementById('audience-timer');
+        if (!timerEl) return;
+
+        if (!endTimeTimestampV2) {
+            if (timerEl.style.visibility !== "hidden") {
+                timerEl.style.visibility = "hidden";
+                timerEl.innerText = "30.0";
+            }
+            return;
+        }
+        if (timerEl.style.visibility !== "visible") timerEl.style.visibility = "visible";
+
+        const dist = endTimeTimestampV2 - new Date().getTime();
+        if (dist > 30000) timerEl.innerText = "30.0";
+        else if (dist <= 0) timerEl.innerText = "0.0";
+        else timerEl.innerText = (dist / 1000).toFixed(1);
+    }
+
+    // ==========================================
+    // 2. DANH SÁCH ĐỘI (key trong diemso)
+    // ==========================================
+    async function fetchTeamNames() {
+        try {
+            const data = (await (await fetch(`${FB.diemso}.json?_t=${Date.now()}`)).json()) || {};
+            window.teamNamesMapping = {};
+            window.activeTeams = [];
+
+            Object.keys(data).forEach(col => {
+                window.teamNamesMapping[col] = col;
+                window.activeTeams.push(col);
+                currentScores[col] = parseInt(data[col]) || 0;
+            });
+            renderTeamsInstantly();
+        } catch (err) {
+            console.error("Lỗi lấy danh sách đội:", err);
+        }
+    }
+
+    // ==========================================
+    // 3. ĐIỂM SỐ
+    // ==========================================
+    async function fetchScoresFromAPI() {
+        if (window.activeTeams.length === 0) return;
+        try {
+            const data = (await (await fetch(`${FB.diemso}.json?_t=${Date.now()}`)).json()) || {};
+            let hasChanged = false;
+            window.activeTeams.forEach(col => {
+                if (data[col] !== undefined && data[col] !== null) {
+                    const newScore = parseInt(data[col]);
+                    if (currentScores[col] !== newScore) {
+                        currentScores[col] = newScore;
+                        hasChanged = true;
+                    }
+                }
+            });
+            if (hasChanged) renderTeamsInstantly();
+        } catch (err) {
+            console.error("Lỗi fetch điểm:", err);
+        }
+    }
+
+    // ==========================================
+    // 4. TRẠNG THÁI GAME VÒNG 2
+    // ==========================================
+    async function fetchVong2Data() {
+        try {
+            const db = (await (await fetch(`${FB.vong2}.json?_t=${Date.now()}`)).json()) || {};
+
+            // Ghép bài nộp thành chuỗi "[đội|đáp án|thời gian]-..."
+            const dsch = db.danhSachCauHoi || {};
+            const subs = db.submittedAnswers || {};
+            Object.keys(dsch).forEach(k => {
+                if (!dsch[k]) return;
+                const s = subs[k] || {};
+                dsch[k].dananthisinh = Object.keys(s)
+                    .map(t => `[${t}|${s[t].answer}|${s[t].time}]`).join('-');
+            });
+
+            globalCauHoiV2 = dsch;
+            let state = db.trangThai || {};
+            globalTrangThai = state;
+            fbCauHoiHienTai = state.cauHoiHienTai;
+
+            if (state.showAnswer !== undefined) {
+                fbShowAnswer = (state.showAnswer === true || state.showAnswer === "true");
+                currentShowAnswer = fbShowAnswer;
+            }
+
+            if (state.blurredPieces !== undefined) {
+                window.fbBlurredArr = state.blurredPieces ? state.blurredPieces.toString().split(',').filter(x => x !== "") : [];
+            }
+            let blurredArr = window.fbBlurredArr;
+
+            // Đồng hồ khi đóng/mở câu hỏi
+            if (!fbCauHoiHienTai || fbCauHoiHienTai === "") {
+                endTimeTimestampV2 = null;
+                lastQuestionIdV2 = null;
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                    let key = localStorage.key(i);
+                    if (key && key.startsWith("khangia_v2_end_time_")) localStorage.removeItem(key);
+                }
+            } else if (fbCauHoiHienTai !== lastQuestionIdV2) {
+                let isPageReload = (lastQuestionIdV2 === null);
+                lastQuestionIdV2 = fbCauHoiHienTai;
+
+                if (isPageReload) {
+                    let saved = localStorage.getItem("khangia_v2_end_time_" + fbCauHoiHienTai);
+                    if (saved && parseInt(saved) > new Date().getTime()) {
+                        endTimeTimestampV2 = parseInt(saved);
+                    } else {
+                        endTimeTimestampV2 = new Date().getTime() + 30000;
+                        localStorage.setItem("khangia_v2_end_time_" + fbCauHoiHienTai, endTimeTimestampV2.toString());
+                    }
+                } else {
+                    endTimeTimestampV2 = new Date().getTime() + 30000;
+                    localStorage.setItem("khangia_v2_end_time_" + fbCauHoiHienTai, endTimeTimestampV2.toString());
+                }
+            }
+
+            // Mảnh ghép 1-4
+            ['1', '2', '3', '4'].forEach(p => {
+                let el = document.getElementById(`piece-${p}`);
+                if (el) {
+                    let isDead = blurredArr.includes(p);
+                    let isRev = (state['manh' + p] === true || state['manh' + p] === "true");
+                    let deadCls = (isDead && !isRev) ? 'piece-dead' : '';
+                    el.className = `piece p${p} ${isRev ? 'revealed' : ''} ${deadCls}`.trim();
+                }
+            });
+
+            // Mảnh trung tâm
+            let p5 = document.getElementById('piece-5');
+            if (p5) {
+                let isDead = blurredArr.includes('5') || blurredArr.includes('CNV') || blurredArr.includes('TRUNGTAM');
+                let isRev = (state.manh5 === true || state.manh5 === "true");
+                let deadCls = (isDead && !isRev) ? 'piece-dead' : '';
+                p5.className = `piece p-cnv ${isRev ? 'revealed' : ''} ${deadCls}`.trim();
+
+                if (isRev && !wasManh5Opened) {
+                    wasManh5Opened = true;
+                    triggerFireworksAndZoom();
+                } else if (!isRev) {
+                    wasManh5Opened = false;
+                }
+            }
+
+            processAudienceData();
+        } catch (err) {
+            console.error("Lỗi fetch trạng thái game:", err);
+        }
+    }
+
+    // ==========================================
+    // PHÓNG TO + PHÁO HOA
+    // ==========================================
+    function triggerFireworksAndZoom() {
+        let puzzleWrapper = document.getElementById('puzzle-wrapper');
+        puzzleWrapper.classList.add('zoomed');
+
+        var end = Date.now() + 2000;
+        (function frame() {
+            confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, zIndex: 10000,
+                colors: ['#ffd700', '#ff416c', '#56ccf2', '#34e062', '#ffffff'] });
+            confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, zIndex: 10000,
+                colors: ['#ffd700', '#ff416c', '#56ccf2', '#34e062', '#ffffff'] });
+            if (Date.now() < end) requestAnimationFrame(frame);
+        }());
+
+        setTimeout(() => puzzleWrapper.classList.remove('zoomed'), 2000);
+    }
+
+    // ==========================================
+    // 5. RENDER
+    // ==========================================
+    function renderTeamsInstantly() {
+        let gridHtml = "";
+
+        if (window.activeTeams.length > 0) {
+            window.activeTeams.forEach(teamCol => {
+                let teamName = window.teamNamesMapping[teamCol];
+                let teamScore = currentScores[teamCol] !== undefined ? currentScores[teamCol] : 0;
+
+                let ansHtml = `<div class="status-waiting">Đang suy nghĩ...</div>`;
+                let teamSubAns = null, teamSubTime = null;
+
+                if (fbCauHoiHienTai !== "" && fbCauHoiHienTai !== null && globalCauHoiV2[fbCauHoiHienTai]) {
+                    let rawAns = globalCauHoiV2[fbCauHoiHienTai].dananthisinh || "";
+                    if (rawAns && rawAns.includes(`[${teamName}|`)) {
+                        rawAns.split('-').forEach(p => {
+                            let match = p.match(/\[(.*?)\|(.*?)\|(.*?)\]/);
+                            if (match && match[1] === teamName) {
+                                teamSubAns = match[2];
+                                teamSubTime = match[3];
+                            }
+                        });
+                    }
+                }
+
+                if (teamSubAns !== null) {
+                    if (currentShowAnswer === true) {
+                        ansHtml = `<div class="status-submitted">${escapeHtml(teamSubAns)}</div><div class="status-time">⏱ Phản xạ: ${escapeHtml(teamSubTime)}</div>`;
+                    } else {
+                        ansHtml = `<div class="status-submitted" style="color:#28a745;">ĐÃ NỘP BÀI</div><div class="status-time">⏱ Phản xạ: ${escapeHtml(teamSubTime)}</div>`;
+                    }
+                }
+
+                gridHtml += `<div class="team-card"><div class="team-name">${escapeHtml(teamName)}</div><div class="team-score">${teamScore}</div><div class="team-answer-box">${ansHtml}</div></div>`;
+            });
+        } else {
+            gridHtml = '<div style="color:#aaa; font-style:italic; font-size: 1.2rem;">Đang tải danh sách đội...</div>';
+        }
+        document.getElementById('teams-grid').innerHTML = gridHtml;
+    }
+
+    function renderQBoard() {
+        const qBoard = document.getElementById('q-board');
+        let blurredArr = window.fbBlurredArr;
+
+        if (fbCauHoiHienTai === "" || fbCauHoiHienTai === null || fbCauHoiHienTai === undefined) {
+            qBoard.innerHTML = '<div style="color:#aaa; font-style:italic; font-size: 1.2rem;">Đang chờ lựa chọn mảnh ghép...</div>';
+            return;
+        }
+
+        let qData = globalCauHoiV2[fbCauHoiHienTai];
+        if (qData) {
+            let cur = fbCauHoiHienTai.toString();
+            let isDead = blurredArr.includes(cur) || (cur === "5" && (blurredArr.includes("CNV") || blurredArr.includes("TRUNGTAM")));
+            let correctAns = qData.dapAn || "";
+
+            let dapAnHtml = (fbShowAnswer && correctAns !== "")
+                ? `<div style="margin-top: 15px; font-size: 2rem; color: #34e062; font-weight: bold; text-shadow: 0 0 15px rgba(52, 224, 98, 0.6); border-top: 2px dashed #34e062; padding-top: 15px;">ĐÁP ÁN: ${escapeHtml(correctAns)}</div>`
+                : "";
+
+            if (isDead) {
+                qBoard.innerHTML = `<div class="q-subject">[ TỪ KHÓA SỐ ${escapeHtml(cur)} ]</div><div class="q-text" style="color:#777;">CÂU HỎI ĐÃ BỊ KHÓA</div>${dapAnHtml}`;
+            } else {
+                let isCenterQ = (cur === "CNV" || cur === "5" || cur.toLowerCase() === "trungtam");
+                if (isCenterQ) {
+                    qBoard.innerHTML = `<div class="q-text">${qData.noiDung}</div>${dapAnHtml}`;
+                } else {
+                    qBoard.innerHTML = `<div class="q-subject">[ TỪ KHÓA SỐ ${escapeHtml(cur)} - ${escapeHtml(qData.soKyTu)} KÝ TỰ ]</div><div class="q-text">${qData.noiDung}</div>${dapAnHtml}`;
+                }
+            }
+        } else {
+            qBoard.innerHTML = '<div style="color:#aaa; font-style:italic; font-size: 1.2rem;">Đang chờ lựa chọn mảnh ghép...</div>';
+        }
+    }
+
+    function processAudienceData() {
+        if (!globalTrangThai || Object.keys(globalTrangThai).length === 0) return;
+
+        const puzzleImg = document.getElementById('puzzle-img');
+        if (globalTrangThai.linkAnh) puzzleImg.style.backgroundImage = `url('${globalTrangThai.linkAnh}')`;
+
+        renderQBoard();
+
+        const wordsBoard = document.getElementById('words-board');
+        let wordsHtml = "";
+        let blurredArr = window.fbBlurredArr;
+
+        for (let i = 1; i <= 4; i++) {
+            let qData = globalCauHoiV2[i];
+            if (!qData) continue;
+
+            let id = i.toString();
+            let charsCount = parseInt(qData.soKyTu) || 0;
+            let answerStr = qData.dapAn ? qData.dapAn.toString().toUpperCase().replace(/\s/g, '') : "";
+            let isRevealed = (globalTrangThai['manh' + id] === true || globalTrangThai['manh' + id] === "true");
+
+            let circlesHtml = "";
+            for (let c = 0; c < charsCount; c++) {
+                let letter = "", extraClass = "";
+                if (isRevealed) { letter = answerStr[c] || ""; extraClass = "empty-revealed"; }
+                circlesHtml += `<div class="circle blue ${extraClass}">${escapeHtml(letter)}</div>`;
+            }
+
+            let isRowDead = blurredArr.includes(id);
+            wordsHtml += `<div class="word-row ${isRowDead ? 'dead' : ''}"><span class="row-label">${id}</span>${circlesHtml}</div>`;
+        }
+        wordsBoard.innerHTML = wordsHtml;
+
+        // Chướng ngại vật (câu 5)
+        const cnvBoard = document.getElementById('cnv-board');
+        let q5Data = globalCauHoiV2['5'];
+
+        if (q5Data) {
+            let isCnvRevealed = (globalTrangThai['manh5'] === true || globalTrangThai['manh5'] === "true");
+            let ansStr = q5Data.dapAn ? q5Data.dapAn.toString().toUpperCase() : "";
+            let charCount = ansStr.replace(/\s/g, '').length;
+
+            if (isCnvRevealed) {
+                cnvBoard.innerHTML = `<span style="color: #f2c94c;">CHƯỚNG NGẠI VẬT:</span> <span style="color: #34e062; font-size: 2.2rem; text-shadow: 0 0 15px rgba(52, 224, 98, 0.8);">${escapeHtml(ansStr)}</span>`;
+            } else {
+                let displayCount = charCount > 0 ? charCount : 14;
+                cnvBoard.innerHTML = `CHƯỚNG NGẠI VẬT GỒM: <span style="color: #56ccf2; font-size: 2.2rem; text-shadow: 0 0 10px rgba(86, 204, 242, 0.8);">${displayCount} Chữ cái</span>`;
+            }
+        } else {
+            cnvBoard.innerHTML = `CHƯỚNG NGẠI VẬT GỒM: <span style="color: #56ccf2; font-size: 2.2rem; text-shadow: 0 0 10px rgba(86, 204, 242, 0.8);">14 Chữ Cái</span>`;
+        }
+
+        renderTeamsInstantly();
+    }
+
+    // ==========================================
+    // KHỞI ĐỘNG
+    // ==========================================
+    window.onload = async function () {
+        setInterval(updateAudienceTimer, 100);
+
+        try {
+            await loadFbConfig();
+        } catch (e) {
+            console.error("Không đọc được api/vong2.json", e);
+            return;
+        }
+
+        await fetchTeamNames();
+        setInterval(fetchScoresFromAPI, 1000);
+        setInterval(fetchVong2Data, 1000);
+    };
+</script>
+</body>
+</html>

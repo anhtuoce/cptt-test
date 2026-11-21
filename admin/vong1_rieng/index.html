@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olympia Admin - Vòng 1 Riêng (Thuần Firebase)</title>
+    <style>
+        /* ================= BASE STYLES ================= */
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f7; margin: 0; padding: 15px; color: #333; box-sizing: border-box; }
+        .dashboard { max-width: 98%; margin: 0 auto; padding: 0 10px; }
+        
+        /* ================= HEADER ================= */
+        .header-panel { background: #003366; color: white; padding: 20px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 15px; position: relative; }
+        .header-panel h1 { margin: 0; font-size: 2rem; letter-spacing: 1px; position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none;}
+        
+        .btn-prev-round, .btn-next-round { color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 1.3rem; transition: 0.3s; display: inline-flex; align-items: center; text-transform: uppercase; letter-spacing: 1px; border: none; cursor: pointer; position: relative; z-index: 2; font-family: inherit;}
+        .btn-prev-round { background: #007bff; box-shadow: 0 4px 10px rgba(0,123,255,0.3); }
+        .btn-prev-round:hover { background: #0056b3; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,123,255,0.5); }
+        .btn-next-round { background: #28a745; box-shadow: 0 4px 10px rgba(40,167,69,0.3); }
+        .btn-next-round:hover { background: #218838; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(40,167,69,0.5); }
+
+        /* ================= PACKAGE PANEL ================= */
+        .package-panel { background: white; padding: 20px 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .package-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .package-panel-header h3 { margin: 0; color: #003366; font-size: 1.4rem; }
+        
+        .btn-random-pkg { background: #17a2b8; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9rem; margin-right: 10px; transition: 0.2s;}
+        .btn-random-pkg:hover { background: #138496; transform: scale(1.05); }
+        .btn-reset-pkg { background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9rem; transition: 0.2s;}
+        .btn-reset-pkg:hover { background: #c82333; transform: scale(1.05); }
+        
+        .package-list { display: flex; gap: 15px; width: 100%; flex-wrap: wrap;}
+        .pkg-btn { flex: 1; padding: 15px; font-size: 1.2rem; font-weight: bold; border-radius: 8px; border: 2px solid #007bff; background: #fff; color: #007bff; cursor: pointer; transition: 0.3s; text-transform: uppercase;}
+        .pkg-btn.active { background: #28a745; color: white; border-color: #28a745; box-shadow: 0 0 10px rgba(40,167,69,0.5); }
+        .pkg-btn.dimmed { opacity: 0.4; border-color: #6c757d; color: #6c757d; background: #e9ecef;}
+
+        .status-bar { text-align: center; margin-bottom: 15px; font-style: italic; color: #666; font-size: 0.95rem; }
+        
+        /* ================= MAIN GRID ================= */
+        .main-grid { display: grid; grid-template-columns: 3.5fr 6.5fr; gap: 20px; align-items: start; }
+
+        /* ================= TEAMS PANEL ================= */
+        .teams-panel { display: block; width: 100%; position: sticky; top: 15px; } 
+        .team-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 6px solid #007bff; display: flex; flex-direction: column; justify-content: space-between; height: fit-content; margin-bottom: 20px;}
+        .team-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; margin-bottom: 20px;}
+        .team-header h3 { margin: 0; color: #003366; font-size: 2.2rem; }
+        .score { font-size: 4.5rem; font-weight: bold; color: #003366; line-height: 1; }
+        
+        .btn-sync { background: #007bff; color: white; border: none; padding: 15px 20px; border-radius: 8px; font-weight: bold; font-size: 1.3rem; cursor: pointer; width: 100%; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,123,255,0.3);}
+        .btn-sync:hover:not(:disabled) { background: #0056b3; transform: translateY(-2px); }
+        .btn-sync:disabled { background: #6c757d; cursor: not-allowed; opacity: 0.8; box-shadow: none; }
+        
+        .controls { display: flex; gap: 20px; align-items: center; justify-content: center; margin-bottom: 20px;}
+        .controls button { width: 100px; padding: 15px; font-size: 2rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: white; transition: 0.2s; line-height: 1;}
+        .btn-add { background: #28a745; }
+        .btn-add:hover { background: #218838; transform: scale(1.05); }
+        .btn-minus { background: #dc3545; }
+        .btn-minus:hover { background: #c82333; transform: scale(1.05); }
+        
+        .score-input { width: 80px; height: 60px; text-align: center; font-size: 1.8rem; font-weight: bold; border: 2px solid #ccc; border-radius: 8px; outline: none; box-sizing: border-box; color: #003366; }
+        .score-input:focus { border-color: #007bff; box-shadow: 0 0 8px rgba(0,123,255,0.5); }
+        
+        /* ================= QUESTIONS PANEL ================= */
+        .questions-panel { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); height: fit-content; }
+        .q-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; margin-bottom: 15px; }
+        .btn-close-q { background: #343a40; color: white; padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-close-q:hover { background: #23272b; }
+        
+        .team-filters { display: flex; gap: 10px; margin-bottom: 20px; width: 100%; flex-wrap: wrap; }
+        .filter-btn { flex: 1; min-width: 100px; padding: 12px 0; background: #f8f9fa; border: 2px solid #dee2e6; border-radius: 6px; font-weight: bold; color: #007bff; cursor: pointer; transition: 0.2s; font-size: 1.1rem;}
+        .filter-btn.active { background: #007bff; border-color: #007bff; color: white; }
+        .filter-btn:hover:not(.active) { background: #e2e6ea; }
+        
+        .q-list { display: grid; grid-template-columns: 1fr; gap: 20px; overflow-y: auto; padding-right: 5px; align-items: stretch;}
+        .q-item { background: #ffffff; padding: 20px; border: 1px solid #dee2e6; border-radius: 10px; transition: 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;}
+        .q-item.active { background: #f0f8ff; border-color: #007bff; border-left: 6px solid #007bff; }
+        
+        .q-text { margin-bottom: 15px; flex-grow: 1; }
+        .q-number-badge { display: inline-block; background: #003366; color: white; padding: 5px 12px; border-radius: 6px; font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; letter-spacing: 0.5px;}
+        .q-content { font-size: 1.25rem; color: #2c3e50; line-height: 1.6; margin-bottom: 15px; }
+        
+        .candidate-ans-box { margin-top: 10px; padding: 12px; border-radius: 8px; background: #fff3cd; border: 2px dashed #ffc107; color: #856404; font-weight: bold; font-size: 1.3rem;}
+
+        .q-actions { display: flex; gap: 10px; margin-top: 15px;}
+        .btn-show { background: #007bff; color: white; padding: 12px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; font-size: 1.05rem; transition: 0.2s;}
+        .btn-show:hover { background: #0056b3; }
+
+        .q-scoring-row { display: flex; gap: 10px; margin-top: 10px;}
+        .btn-mc-wrong, .btn-mc-correct { flex: 1; background: #fff; border-radius: 6px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; padding: 10px; }
+        .btn-mc-wrong { color: #dc3545; border: 2px solid #dc3545; }
+        .btn-mc-wrong.active { background: #dc3545; color: white; box-shadow: 0 0 10px rgba(220,53,69,0.4);}
+        .btn-mc-correct { color: #28a745; border: 2px solid #28a745; }
+        .btn-mc-correct.active { background: #28a745; color: white; box-shadow: 0 0 10px rgba(40,167,69,0.4);}
+
+        /* THANH SỐ THỨ TỰ CÂU HỎI */
+        .quick-nav-box { display: flex; justify-content: center; gap: 15px; padding-top: 20px; border-top: 2px solid #f0f0f0; margin-top: 20px; flex-wrap: wrap;}
+        .q-circle { width: 50px; height: 50px; border-radius: 50%; border: 3px solid #ccc; background: white; color: #333; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
+        .q-circle.correct { background: #28a745; color: white; border-color: #28a745;}
+        .q-circle.wrong { background: #dc3545; color: white; border-color: #dc3545;}
+        
+        .q-circle.active-q { border-color: #007bff; background: #e7f1ff; transform: scale(1.15); box-shadow: 0 0 15px rgba(0,123,255,0.6); color: #007bff;}
+        .q-circle:hover { transform: scale(1.1); border-color: #007bff; }
+
+        @media screen and (max-width: 1200px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ================= OVERLAYS ================= */
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); z-index: 10000; display: none; justify-content: center; align-items: center; }
+        .loading-popup { background-color: #002b5e; border: 2px solid #2898cf; border-radius: 50px; padding: 15px 40px; display: flex; align-items: center; gap: 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+        .loading-spinner { width: 24px; height: 24px; border: 4px solid #3b5f85; border-top: 4px solid #ffd700; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { color: #ffd700; font-size: 1.25rem; font-weight: 800; margin: 0; }
+
+        #scoring-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 10, 30, 0.85); z-index: 10001; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .scoring-card { background: linear-gradient(135deg, #003366, #0056b3); padding: 40px 60px; border-radius: 20px; text-align: center; box-shadow: 0 10px 40px rgba(0, 123, 255, 0.4); border: 2px solid #56ccf2; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); min-width: 400px;}
+        .scoring-icon { font-size: 5rem; margin-bottom: 20px; animation: bounceIcon 1s infinite alternate; }
+        .scoring-title { color: #ffd700; font-size: 2.2rem; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        .scoring-subtitle { color: #fff; font-size: 1.3rem; margin-bottom: 0; opacity: 0.9; }
+        .scoring-loader { margin-top: 25px; width: 100%; height: 6px; background: rgba(255,255,255,0.2); border-radius: 10px; overflow: hidden; position: relative; }
+        .scoring-loader-bar { height: 100%; width: 50%; background: #56ccf2; border-radius: 10px; animation: loadingBar 1s infinite ease-in-out; }
+        
+        .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 10, 30, 0.85); z-index: 10005; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .custom-modal-card { background: #fff; padding: 30px 40px; border-radius: 15px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border-top: 6px solid #007bff; max-width: 450px; animation: popIn 0.3s ease-out; }
+        .custom-modal-title { color: #003366; font-size: 1.8rem; margin-top: 0; margin-bottom: 15px; font-weight: bold; text-transform: uppercase; }
+        .custom-modal-message { color: #444; font-size: 1.2rem; margin-bottom: 30px; line-height: 1.5; }
+        .custom-modal-actions { display: flex; justify-content: center; gap: 20px; }
+        .custom-modal-btn { padding: 12px 25px; font-size: 1.2rem; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; transition: 0.2s; }
+        .btn-modal-cancel { background: #6c757d; color: white; }
+        .btn-modal-cancel:hover { background: #5a6268; transform: scale(1.05); }
+        .btn-modal-ok { background: #28a745; color: white; }
+        .btn-modal-ok:hover { background: #218838; transform: scale(1.05); }
+
+        @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        @keyframes bounceIcon { from { transform: translateY(0); } to { transform: translateY(-15px); } }
+        @keyframes loadingBar { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+    </style>
+</head>
+<body>
+    <div id="loading-overlay"><div class="loading-popup"><div class="loading-spinner"></div><p class="loading-text" id="loading-text">Đang thao tác dữ liệu...</p></div></div>
+    <div id="scoring-overlay"><div class="scoring-card"><div class="scoring-icon">✨🏆✨</div><div class="scoring-title" id="scoring-team-name">ĐỘI THI</div><div class="scoring-subtitle">Đang tổng kết điểm. Vui lòng đợi...</div><div class="scoring-loader"><div class="scoring-loader-bar"></div></div></div></div>
+    
+    <div id="custom-confirm-overlay" class="custom-modal-overlay">
+        <div class="custom-modal-card">
+            <h3 class="custom-modal-title" id="custom-confirm-title">Xác nhận</h3>
+            <p class="custom-modal-message" id="custom-confirm-message">Bạn có chắc chắn?</p>
+            <div class="custom-modal-actions">
+                <button class="custom-modal-btn btn-modal-cancel" onclick="closeCustomConfirm()">Hủy Bỏ</button>
+                <button class="custom-modal-btn btn-modal-ok" onclick="executeCustomConfirm()">Đồng Ý</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-alert-overlay" class="custom-modal-overlay">
+        <div class="custom-modal-card">
+            <h3 class="custom-modal-title" id="custom-alert-title" style="color: #dc3545;">Thông báo</h3>
+            <p class="custom-modal-message" id="custom-alert-message">Nội dung</p>
+            <div class="custom-modal-actions">
+                <button class="custom-modal-btn btn-modal-ok" onclick="closeCustomAlert()" style="background: #007bff;">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="header-panel">
+            <button onclick="setDefaultRound1()" class="btn-prev-round">◀ MẶC ĐỊNH VÒNG 1</button>
+            <h1>BẢNG ĐIỀU KHIỂN MC (NO PHP)</h1>
+            <button onclick="goToRound2()" class="btn-next-round">CHUYỂN VÒNG 1 Chung ▶</button>
+        </div>
+
+        <div class="package-panel">
+            <div class="package-panel-header">
+                <h3 id="pkg-title">Đang chọn gói cho: <span style="color:#666">Chưa chọn đội</span></h3>
+                <div>
+                    <button class="btn-random-pkg" onclick="randomAssignPackage()">🎲 Chọn Ngẫu Nhiên</button>
+                    <button class="btn-reset-pkg" onclick="resetPackages()">Làm mới các Gói</button>
+                </div>
+            </div>
+            <div class="package-list" id="package-list">
+                <!-- Nút gói câu hỏi sinh từ Firebase -->
+            </div>
+        </div>
+
+        <div class="status-bar" id="admin-status">Đang đọc cấu hình hệ thống...</div>
+        
+        <div class="main-grid">
+            <div class="teams-panel" id="team-grid"></div>
+            <div class="questions-panel">
+                <div class="q-header">
+                    <h2 style="margin: 0; color: #333; font-size:1.5rem;">Ngân hàng câu hỏi & Chấm điểm</h2>
+                    <div><button class="btn-close-q" onclick="closeQuestion()">ĐÓNG CÂU HỎI</button></div>
+                </div>
+                
+                <div class="team-filters" id="dynamic-team-filters"></div>
+                
+                <div class="q-list" id="question-list"></div>
+                <div id="quick-nav-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Tuyệt đối không còn API PHP nào ở đây.
+        // Biến URL tự động lấy từ file api/vong1_rieng.json
+        let FIREBASE_DB_URL = "";
+        let FB_VONG1_URL = "";
+        let FB_MATCH_STATE_URL = "";
+        let FB_SCORES_URL = "";
+        
+        let currentTeamFilter = ''; 
+        let currentQuestionIndex = null; 
+        window.lastAdminData = null;
+        
+        let firebaseScores = {};
+        let teamToDbColMap = {}; 
+        
+        let teamPackageMap = JSON.parse(localStorage.getItem('olympia_team_pkg_map') || '{}');
+        let usedPackages = JSON.parse(localStorage.getItem('olympia_used_pkgs') || '[]');
+        let manualScoring = JSON.parse(localStorage.getItem('olympia_manual_scoring') || '{}');
+
+        // ================= 1. KHỞI ĐỘNG BẰNG CÁCH ĐỌC JSON CONFIG =================
+        async function bootApp() {
+            try {
+                // Đọc file json chứa URL Firebase (Chỉ đọc file nội bộ .json, không qua PHP)
+                const res = await fetch('api/vong1_rieng.json'); 
+                const config = await res.json();
+                
+                if (config.api_url) {
+                    FB_VONG1_URL = config.api_url;
+                    
+                    // Tự động phân tích URL gốc của Firebase
+                    FIREBASE_DB_URL = FB_VONG1_URL.substring(0, FB_VONG1_URL.lastIndexOf('/'));
+                    if(FIREBASE_DB_URL.endsWith('vong1_rieng')) {
+                        FIREBASE_DB_URL = FIREBASE_DB_URL.substring(0, FIREBASE_DB_URL.lastIndexOf('/'));
+                    }
+
+                    // Tự động định tuyến URL Firebase cho Vòng 1 và Điểm
+                    FB_MATCH_STATE_URL = `${FIREBASE_DB_URL}/vong1_rieng/match_state.json`;
+                    FB_SCORES_URL = `${FIREBASE_DB_URL}/diemso.json`;
+
+                    document.getElementById('admin-status').innerText = "Cấu hình thành công. Đang kết nối Firebase...";
+
+                    // Khởi chạy vòng lặp đọc Firebase
+                    fetchFirebaseTeamsAndScores();
+                    initAdmin();
+                } else {
+                    document.getElementById('admin-status').innerHTML = `<span style="color:red;">Lỗi: File config không chứa api_url!</span>`;
+                }
+            } catch (error) {
+                document.getElementById('admin-status').innerHTML = `<span style="color:red;">Lỗi đọc cấu hình api/vong1_rieng.json</span>`;
+                console.error("Boot error:", error);
+            }
+        }
+
+        // ================= 2. QUÉT TRỰC TIẾP FIREBASE DATABASE =================
+        // Vòng lặp lấy Điểm số
+        async function fetchFirebaseTeamsAndScores() {
+            if(!FB_SCORES_URL) return setTimeout(fetchFirebaseTeamsAndScores, 1500);
+            try {
+                const res = await fetch(`${FB_SCORES_URL}?_t=${Date.now()}`);
+                const data = await res.json();
+                
+                if (data) {
+                    firebaseScores = data;
+                    teamToDbColMap = {};
+                    let teamCount = 1;
+                    for(let key in data) {
+                        let tName = data[key].tendoi ? data[key].tendoi : `Đội ${teamCount}`;
+                        teamToDbColMap[tName] = key; 
+                        teamCount++;
+                    }
+                }
+                if (window.lastAdminData) renderDashboard(window.lastAdminData);
+            } catch(e) {} 
+            finally { setTimeout(fetchFirebaseTeamsAndScores, 1500); } 
+        }
+
+        // Vòng lặp lấy Ngân hàng câu hỏi và Trạng thái trận đấu
+        async function initAdmin() {
+            if(!FB_VONG1_URL) return setTimeout(initAdmin, 2000);
+            try {
+                const res = await fetch(`${FB_VONG1_URL}?_t=${Date.now()}`);
+                const data = await res.json();
+                if(data) { 
+                    window.lastAdminData = data; 
+                    document.getElementById('admin-status').innerText = "Giao tiếp Firebase: Đã kết nối."; 
+                    renderDashboard(data); 
+                }
+            } catch(e) {}
+            setTimeout(initAdmin, 2000); 
+        }
+
+        // ================= 3. BÓC TÁCH JSON FIREBASE =================
+        function getQuestionBank(data) {
+            if (!data) return {};
+            let qBank = data.question_bank;
+            if (!qBank && data.vong1_rieng && data.vong1_rieng.question_bank) {
+                qBank = data.vong1_rieng.question_bank;
+            }
+            return qBank || {};
+        }
+
+        function getMatchState(data) {
+            if (!data) return {};
+            let state = data.match_state;
+            if (!state && data.vong1_rieng && data.vong1_rieng.match_state) {
+                state = data.vong1_rieng.match_state;
+            }
+            return state || {};
+        }
+
+        function getAvailablePackages(data) {
+            let qBank = getQuestionBank(data);
+            return Object.keys(qBank).map(k => k.toUpperCase());
+        }
+
+        function getAssignedPackageForTeam(teamID) { return teamPackageMap[teamID] || null; }
+
+        function getCurrentTeamName() {
+            let index = parseInt(currentTeamFilter.replace("ID", "")) - 1;
+            let teamNames = Object.keys(teamToDbColMap);
+            if(index >= 0 && index < teamNames.length) return teamNames[index];
+            return "";
+        }
+
+        // ================= 4. GHI DỮ LIỆU ĐIỀU KHIỂN XUỐNG FIREBASE =================
+        function setDefaultRound1() {
+            showCustomConfirm("MẶC ĐỊNH VÒNG 1", "Đưa màn hình Khán giả về trạng thái chờ của Vòng 1?", function() {
+                fetch(FB_MATCH_STATE_URL, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ cauhoihientai: "PREPARE", config: { ketvong: false, show: false } })
+                });
+            });
+        }
+        
+        function goToRound2() {
+            showCustomConfirm("XÁC NHẬN CHUYỂN VÒNG", "Bạn có chắc chắn muốn chuyển sang Vòng 2?", function() {
+                window.location.href = "../vong2"; 
+            });
+        }
+
+        function setQuestion(id) { 
+            let assignedPkgID = getAssignedPackageForTeam(currentTeamFilter);
+            if(!assignedPkgID) return showCustomAlert("Cảnh báo", "Vui lòng gán Gói câu hỏi trước!");
+            let currentTeamName = getCurrentTeamName();
+            if(!currentTeamName) return showCustomAlert("Lỗi", "Không tìm thấy tên đội!");
+
+            showLoading(`Đang phát câu ${id}...`);
+            
+            // Dùng PATCH để chỉ ghi đè field cần thiết, không ảnh hưởng field khác
+            let updateData = {
+                cauhoihientai: id.toString(),
+                doihientai: currentTeamName,
+                thoigian: Date.now() + 60000,
+                config: { show: false, ketvong: false }
+            };
+
+            fetch(FB_MATCH_STATE_URL, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(updateData)
+            }).then(() => setTimeout(hideLoading, 200));
+        }
+        
+        function closeQuestion() { 
+            showCustomConfirm("ĐÓNG CÂU HỎI & LÀM SẠCH", "Xác nhận Đóng câu hỏi và LÀM SẠCH ĐÁP ÁN của đội hiện tại?", function() {
+                showLoading("Đang đóng câu hỏi..."); 
+                let teamName = getCurrentTeamName();
+
+                fetch(FB_MATCH_STATE_URL, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ cauhoihientai: "PREPARE" })
+                });
+
+                if (teamName && manualScoring[teamName]) { 
+                    delete manualScoring[teamName]; 
+                    localStorage.setItem('olympia_manual_scoring', JSON.stringify(manualScoring)); 
+                }
+
+                if (teamName) {
+                    fetch(`${FB_MATCH_STATE_URL}/dananthisinh.json`, {
+                        method: 'PATCH',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ [teamName]: "" })
+                    }).then(() => {
+                        document.querySelectorAll('.btn-sync').forEach(btn => { 
+                            if(btn.getAttribute('onclick').includes(teamName)) { 
+                                btn.disabled = false; btn.innerText = '⬆ GỬI KẾT QUẢ & CỘNG ĐIỂM'; 
+                            }
+                        }); 
+                    });
+                }
+                setTimeout(() => { hideLoading(); }, 500);
+            });
+        }
+
+        // ================= 5. RENDER GIAO DIỆN HỆ THỐNG =================
+        function setTeamFilter(filterId) {
+            currentTeamFilter = filterId; 
+            currentQuestionIndex = null; 
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            let btn = document.getElementById('btn-filter-' + filterId);
+            if(btn) btn.classList.add('active');
+            
+            if (window.lastAdminData) {
+                renderDashboard(window.lastAdminData);
+                let teamName = getCurrentTeamName();
+                if(teamName) {
+                    fetch(FB_MATCH_STATE_URL, {
+                        method: 'PATCH',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ cauhoihientai: "PREPARE", doihientai: teamName })
+                    });
+                }
+            }
+        }
+
+        function randomAssignPackage() {
+            if(!currentTeamFilter) return showCustomAlert("Lỗi Thao Tác", "Vui lòng click chọn Đội ở bên dưới trước khi bốc ngẫu nhiên!");
+            let allPkgs = getAvailablePackages(window.lastAdminData);
+            if(allPkgs.length === 0) return showCustomAlert("Lỗi Dữ Liệu", "Không tìm thấy gói câu hỏi nào trong hệ thống!");
+
+            let currentPkg = teamPackageMap[currentTeamFilter];
+            let availablePkgs = allPkgs.filter(pkg => !usedPackages.includes(pkg));
+            
+            if (currentPkg) availablePkgs.push(currentPkg);
+            if (availablePkgs.length === 0) return showCustomAlert("Cảnh báo", "Tất cả các gói đã được phân hết!");
+
+            let randomIndex = Math.floor(Math.random() * availablePkgs.length);
+            let selectedPkg = availablePkgs[randomIndex];
+
+            if(selectedPkg !== currentPkg) assignPackage(selectedPkg);
+            else if(window.lastAdminData) renderDashboard(window.lastAdminData);
+        }
+
+        function assignPackage(pkgID) {
+            if(!currentTeamFilter) return showCustomAlert("Lỗi", "Vui lòng chọn đội trước!");
+            if(teamPackageMap[currentTeamFilter] === pkgID) return; 
+            if(usedPackages.includes(pkgID)) return; 
+
+            let oldPkg = teamPackageMap[currentTeamFilter];
+            if(oldPkg) usedPackages = usedPackages.filter(p => p !== oldPkg);
+
+            teamPackageMap[currentTeamFilter] = pkgID;
+            if(!usedPackages.includes(pkgID)) usedPackages.push(pkgID);
+
+            currentQuestionIndex = null; 
+            localStorage.setItem('olympia_team_pkg_map', JSON.stringify(teamPackageMap));
+            localStorage.setItem('olympia_used_pkgs', JSON.stringify(usedPackages));
+            if(window.lastAdminData) renderDashboard(window.lastAdminData);
+        }
+
+        function resetPackages() {
+            showCustomConfirm("CẢNH BÁO LÀM MỚI TẤT CẢ", "Hành động này sẽ Xóa Gói đã phân và ĐIỂM ĐANG CHẤM nội bộ?", function() {
+                teamPackageMap = {}; usedPackages = []; currentQuestionIndex = null; manualScoring = {}; 
+                localStorage.removeItem('olympia_team_pkg_map'); localStorage.removeItem('olympia_used_pkgs'); localStorage.removeItem('olympia_manual_scoring'); 
+                location.reload(); 
+            });
+        }
+
+        function toggleManualScore(teamName, qIndex, val) {
+            if (!manualScoring[teamName]) manualScoring[teamName] = {};
+            if (manualScoring[teamName][qIndex] === val) manualScoring[teamName][qIndex] = null; 
+            else manualScoring[teamName][qIndex] = val;
+            localStorage.setItem('olympia_manual_scoring', JSON.stringify(manualScoring));
+            if(window.lastAdminData) renderDashboard(window.lastAdminData);
+        }
+
+        function jumpToQuestion(index, qId) { 
+            currentQuestionIndex = index; 
+            if(window.lastAdminData) renderDashboard(window.lastAdminData); 
+            if(qId) setQuestion(qId);
+        }
+        
+        function renderDashboard(data) { 
+            if(!data) data = {};
+            
+            let filterContainer = document.getElementById('dynamic-team-filters');
+            let filtersHtml = "";
+            let teamCount = 1;
+            
+            for(let tName in teamToDbColMap) {
+                let filterID = "ID" + teamCount;
+                let isActive = (filterID === currentTeamFilter) ? "active" : "";
+                filtersHtml += `<button class="filter-btn ${isActive}" id="btn-filter-${filterID}" onclick="setTeamFilter('${filterID}')">${tName}</button>`;
+                teamCount++;
+            }
+            filterContainer.innerHTML = filtersHtml;
+
+            renderPackages(data); 
+            renderQuestions(data); 
+            renderTeams(); 
+        }
+
+        function renderPackages(data) {
+            const pkgList = document.getElementById('package-list');
+            if (!currentTeamFilter) {
+                document.getElementById('pkg-title').innerHTML = `Đang chọn gói cho: <span style="color:#666">Chưa chọn đội</span>`;
+                pkgList.innerHTML = '<span style="color:#666; font-style:italic;">Vui lòng chọn đội bên dưới để thao tác...</span>';
+                return;
+            }
+
+            let tName = getCurrentTeamName() || currentTeamFilter;
+            document.getElementById('pkg-title').innerHTML = `Đang chọn gói cho: <span style="color:#007bff">${tName}</span>`;
+            pkgList.innerHTML = '';
+            
+            let allPkgs = getAvailablePackages(data);
+
+            if(allPkgs.length === 0) {
+                pkgList.innerHTML = '<span style="color:red; font-style:italic;">Chưa có dữ liệu gói câu hỏi...</span>';
+                return;
+            }
+
+            allPkgs.forEach((pkgId) => {
+                let isUsed = usedPackages.includes(pkgId);
+                let isAssignedToCurrent = (teamPackageMap[currentTeamFilter] === pkgId);
+                let cls = "pkg-btn";
+                if(isAssignedToCurrent) cls += " active";
+                else if(isUsed) cls += " dimmed"; 
+                
+                let labelText = "GÓI " + pkgId.replace(/[^0-9]/g, '');
+                if(labelText === "GÓI ") labelText = pkgId; 
+                let btnText = isAssignedToCurrent ? `ĐÃ CHỌN: ${labelText}` : labelText;
+                
+                pkgList.innerHTML += `<button class="${cls}" onclick="assignPackage('${pkgId}')" ${isUsed && !isAssignedToCurrent ? 'disabled' : ''}>${btnText}</button>`;
+            });
+        }
+
+        function renderQuestions(data) {
+            const qList = document.getElementById('question-list'); 
+            const quickNavContainer = document.getElementById('quick-nav-container'); 
+            
+            if (!currentTeamFilter) {
+                qList.innerHTML = '<div style="grid-column: 1 / -1; padding: 20px; color: #666; font-style: italic; text-align:center; font-size: 1.1rem;">Vui lòng click chọn đội phía trên để xem ngân hàng câu hỏi...</div>';
+                quickNavContainer.innerHTML = '';
+                return;
+            }
+
+            let qBank = getQuestionBank(data);
+            let assignedPkgID = getAssignedPackageForTeam(currentTeamFilter); 
+            let pkgKey = assignedPkgID ? assignedPkgID.toLowerCase() : null; 
+
+            let rawQuestions = (pkgKey && qBank[pkgKey]) ? qBank[pkgKey] : [];
+            let questionsToShow = [];
+
+            // Loại bỏ mảng null (do Firebase xuất mảng)
+            if(Array.isArray(rawQuestions)) {
+                for(let k = 1; k < rawQuestions.length; k++) {
+                    if(rawQuestions[k]) {
+                        questionsToShow.push({ 
+                            id: k.toString(), 
+                            linhVuc: "Câu " + k, 
+                            text: rawQuestions[k].cauhoi, 
+                            dapAn: rawQuestions[k].dapan || rawQuestions[k].danan 
+                        });
+                    }
+                }
+            } else {
+                for(let k in rawQuestions) {
+                    if(rawQuestions[k] && rawQuestions[k].cauhoi) {
+                        questionsToShow.push({ 
+                            id: k, 
+                            linhVuc: "Câu " + k, 
+                            text: rawQuestions[k].cauhoi, 
+                            dapAn: rawQuestions[k].dapan || rawQuestions[k].danan 
+                        });
+                    }
+                }
+            }
+
+            qList.innerHTML = '';
+            quickNavContainer.innerHTML = '';
+            
+            let teamName = getCurrentTeamName() || currentTeamFilter;
+            let tState = manualScoring[teamName] || {};
+
+            if (questionsToShow.length === 0) {
+                qList.innerHTML = '<div style="grid-column: 1 / -1; padding: 20px; color: #666; font-style: italic; text-align:center; font-size: 1.1rem;">Vui lòng Bốc Ngẫu Nhiên (hoặc bấm chọn Gói) để hiển thị câu hỏi!</div>';
+                return;
+            }
+
+            let totalQuestions = questionsToShow.length;
+            let quickNavHtml = `<div class="quick-nav-box">`;
+            for(let i = 0; i < totalQuestions; i++) {
+                let state = tState[i]; let cClass = "q-circle";
+                if(currentQuestionIndex !== null && i === currentQuestionIndex) cClass += " active-q"; 
+                if(state === true) cClass += " correct"; else if(state === false) cClass += " wrong";
+                let qId = questionsToShow[i].id;
+                quickNavHtml += `<div class="${cClass}" onclick="jumpToQuestion(${i}, '${qId}')" title="Phát Câu ${qId}">${i+1}</div>`;
+            }
+            quickNavHtml += `</div>`;
+            quickNavContainer.innerHTML = quickNavHtml;
+
+            if (currentQuestionIndex === null) {
+                qList.innerHTML = '<div style="padding: 20px; color: #666; font-style: italic; text-align:center; font-size: 1.1rem;">Vui lòng click vào số câu hỏi bên dưới để xem nội dung và phát cho thí sinh...</div>';
+                return;
+            }
+
+            let i = currentQuestionIndex;
+            if(i >= totalQuestions) i = totalQuestions - 1;
+
+            let id = questionsToShow[i].id;
+            let linhVuc = questionsToShow[i].linhVuc;
+            let text = questionsToShow[i].text;
+            let dapAn = questionsToShow[i].dapAn;
+            
+            let matchState = getMatchState(data);
+            let isActive = (id == matchState.cauhoihientai);
+            let itemClass = isActive ? "active" : "";
+            let btnPhatHtml = `<button class="btn-show" onclick="setQuestion('${id}')">Phát Lại Câu ${id}</button>`;
+
+            let state = tState[i];
+            let actCorrect = state === true ? "active" : "";
+            let actWrong = state === false ? "active" : "";
+
+            let submittedAnsObj = matchState.dananthisinh || {};
+            let candidateAns = submittedAnsObj[teamName] || "Chưa có đáp án";
+            
+            let candidateHtml = `<div class="candidate-ans-box">🙋 Thí sinh: <span style="color:#000;">${candidateAns}</span></div>`;
+
+            let scoringHtml = `
+                <div class="q-scoring-row">
+                    <button class="btn-mc-wrong ${actWrong}" onclick="toggleManualScore('${teamName}', ${i}, false)">✘ Sai (0đ)</button>
+                    <button class="btn-mc-correct ${actCorrect}" onclick="toggleManualScore('${teamName}', ${i}, true)">✔ Đúng (+10đ)</button>
+                </div>`;
+
+            qList.innerHTML = `
+                <div class="q-item ${itemClass}">
+                    <div class="q-text">
+                        <span class="q-number-badge">Câu ${id}</span>
+                        <div class="q-content">
+                            <span style="color:#007bff; font-weight:bold; margin-right: 5px;">${linhVuc}</span> ${text}
+                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ccc;"><b>Đáp án MC:</b> <span style="color:#28a745; font-weight:bold;">${dapAn}</span></div>
+                        </div>
+                        ${candidateHtml}
+                    </div>
+                    <div><div class="q-actions">${btnPhatHtml}</div>${scoringHtml}</div>
+                </div>`;
+        }
+
+        function renderTeams() {
+            const teamGrid = document.getElementById('team-grid');
+            let inputStates = {};
+            document.querySelectorAll('.score-input').forEach(inp => {
+                if(document.activeElement === inp) inputStates['focus'] = inp.id;
+                inputStates[inp.id] = inp.value;
+            });
+
+            teamGrid.innerHTML = '';
+            if (!currentTeamFilter) {
+                teamGrid.innerHTML = `<div style="text-align:center; padding: 40px 20px; color:#999; font-style:italic; border: 1px dashed #ccc; border-radius: 8px; font-size: 1.1rem; background: #fff;">Chưa chọn đội. Vui lòng click chọn Đội ở bên phải để bắt đầu.</div>`;
+                return;
+            }
+
+            let teamCountForFilter = 1;
+            for (let teamName in teamToDbColMap) {
+                let currentExpectedID = "ID" + teamCountForFilter;
+                
+                if (currentExpectedID === currentTeamFilter) {
+                    let dbCol = teamToDbColMap[teamName]; 
+                    let teamData = firebaseScores[dbCol] || {};
+                    let teamScore = teamData.diem !== undefined ? parseInt(teamData.diem) : 0;
+                    
+                    let assignedPkgID = getAssignedPackageForTeam(currentExpectedID);
+                    let manualSyncHtml = "";
+
+                    if (assignedPkgID) {
+                        let tState = manualScoring[teamName] || {}; let localScore = 0;
+                        for(let j = 0; j < 6; j++) { if (tState[j] === true) localScore += 10; }
+                        
+                        let matchState = getMatchState(window.lastAdminData);
+                        let submittedAnsObj = matchState.dananthisinh || {};
+                        let isSynced = false;
+                        if(submittedAnsObj[teamName] && submittedAnsObj[teamName].includes("MC Chấm")) {
+                            isSynced = true;
+                        }
+
+                        manualSyncHtml = `
+                            <div style="margin-top: 10px; padding-top: 25px; border-top: 2px dashed #eee; text-align: center;">
+                                <div style="font-size: 1.4rem; font-weight: bold; margin-bottom: 20px; color: #003366;">
+                                    Điểm tạm tính Vòng này: <span style="color: #28a745; font-size: 2.5rem; display:block; margin-top:5px;">${localScore} đ</span>
+                                </div>
+                                <button class="btn-sync" onclick="syncManualScore('${teamName}', '${dbCol}', ${localScore})" ${isSynced ? 'disabled' : ''}>
+                                    ${isSynced ? '✔ ĐÃ GHI KẾT QUẢ LÊN HỆ THỐNG' : '⬆ GỬI KẾT QUẢ & CỘNG ĐIỂM'}
+                                </button>
+                            </div>`;
+                    }
+
+                    teamGrid.innerHTML += `
+                        <div class="team-card">
+                            <div>
+                                <div class="team-header"><h3>${teamName}</h3><div class="score" id="score_card">${teamScore}</div></div>
+                                <div class="controls">
+                                    <button class="btn-minus" onclick="changeScore('${teamName}', '${dbCol}', 'inp_score', -1)">-</button>
+                                    <input type="number" id="inp_score" value="10" step="10" class="score-input" onclick="this.select()">
+                                    <button class="btn-add" onclick="changeScore('${teamName}', '${dbCol}', 'inp_score', 1)">+</button>
+                                </div>
+                            </div>
+                            ${manualSyncHtml}
+                        </div>`;
+                }
+                teamCountForFilter++;
+            }
+
+            Object.keys(inputStates).forEach(id => { 
+                if(id === 'focus') return; 
+                let el = document.getElementById(id); 
+                if(el) { el.value = inputStates[id]; if(inputStates['focus'] === id) el.focus(); } 
+            });
+        }
+
+        // ================= 6. XỬ LÝ ĐIỂM SỐ TRỰC TIẾP LÊN FIREBASE =================
+        function changeScore(teamName, dbCol, inputId, multiplier) {
+            let val = parseInt(document.getElementById(inputId).value); 
+            if (isNaN(val) || val <= 0) return showCustomAlert("Lỗi", 'Vui lòng nhập số điểm hợp lệ!'); 
+            let points = val * multiplier;
+
+            fetch(`${FB_SCORES_URL}?_t=${Date.now()}`)
+            .then(res => res.json())
+            .then(data => {
+                let teamData = data[dbCol] || {};
+                let currentScore = teamData.diem !== undefined ? parseInt(teamData.diem) : 0;
+                let newScore = currentScore + points; 
+                
+                fetch(`${FIREBASE_DB_URL}/diemso/${dbCol}.json`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ diem: newScore })
+                }).then(()=> {
+                    document.getElementById('admin-status').innerText = `[Firebase] Đã cập nhật ${points > 0 ? '+'+points : points}đ cho ${teamName}.`;
+                });
+            });
+        }
+
+        function syncManualScore(teamName, dbCol, localScore) {
+            showCustomConfirm("XÁC NHẬN GỬI ĐIỂM", `Cộng thêm <b>${localScore} điểm</b> cho <b>${teamName}</b> và KẾT THÚC LƯỢT THI?`, function() {
+                showScoringPopup(teamName); 
+                
+                let tState = manualScoring[teamName] || {}; let ansArr = [];
+                for(let i=0; i<6; i++) { 
+                    if(tState[i] === true) ansArr.push(`C${i+1}: 10`); 
+                    else if(tState[i] === false) ansArr.push(`C${i+1}: 0`); 
+                    else ansArr.push(`C${i+1}: Chưa trả lời`); 
+                }
+                let ansStr = ansArr.join(" | ") + " (MC Chấm)";
+                document.querySelectorAll('.btn-sync').forEach(btn => { if(btn.getAttribute('onclick').includes(teamName)) { btn.disabled = true; btn.innerText = '✔ ĐANG LƯU...'; }});
+                
+                // Kết thúc vòng
+                fetch(FB_MATCH_STATE_URL, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ cauhoihientai: "KET_THUC", config: { ketvong: true, show: false } })
+                });
+
+                // Ghi điểm
+                if (localScore > 0) {
+                    fetch(`${FB_SCORES_URL}?_t=${Date.now()}`)
+                    .then(res => res.json())
+                    .then(dbData => {
+                        let teamData = dbData[dbCol] || {};
+                        let currentScore = teamData.diem !== undefined ? parseInt(teamData.diem) : 0;
+                        let newScore = currentScore + localScore;
+                        
+                        fetch(`${FIREBASE_DB_URL}/diemso/${dbCol}.json`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ diem: newScore })
+                        });
+                    });
+                }
+                
+                // Lưu Log đáp án
+                fetch(`${FB_MATCH_STATE_URL}/dananthisinh.json`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ [teamName]: ansStr })
+                }).then(() => { 
+                    document.querySelectorAll('.btn-sync').forEach(btn => { if(btn.getAttribute('onclick').includes(teamName)) btn.innerText = '✔ ĐÃ GHI KẾT QUẢ'; }); 
+                    hideScoringPopup(); 
+                });
+                
+                setTimeout(hideScoringPopup, 1500); 
+            });
+        }
+
+        // ================= GÁN HÀM GLOBAL VÀ CHẠY =================
+        window.showLoading = showLoading; window.hideLoading = hideLoading; window.showScoringPopup = showScoringPopup; window.hideScoringPopup = hideScoringPopup;
+        window.showCustomConfirm = showCustomConfirm; window.closeCustomConfirm = closeCustomConfirm; window.executeCustomConfirm = executeCustomConfirm;
+        window.showCustomAlert = showCustomAlert; window.closeCustomAlert = closeCustomAlert;
+        window.setDefaultRound1 = setDefaultRound1; window.goToRound2 = goToRound2; window.setTeamFilter = setTeamFilter; 
+        window.randomAssignPackage = randomAssignPackage; window.assignPackage = assignPackage; window.resetPackages = resetPackages;
+        window.toggleManualScore = toggleManualScore; window.jumpToQuestion = jumpToQuestion;
+        window.changeScore = changeScore; window.syncManualScore = syncManualScore;
+        window.setQuestion = setQuestion; window.closeQuestion = closeQuestion;
+
+        // Bắt đầu ứng dụng Serverless
+        bootApp(); 
+    </script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đường Lên Đỉnh Olympia - Vòng 1.1</title>
+    <style>
+        /* ================= GIAO DIỆN CHUNG ================= */
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top, #153280 0%, #061138 50%, #010414 100%); color: white; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
+        
+        /* ================= HEADER & FOOTER ================= */
+        .round-header { position: relative; width: 100%; padding: 15px 0; font-size: 2.5rem; font-weight: bold; text-transform: uppercase; color: #ffd700; border-bottom: 3px solid #ffd700; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 50; }
+        .logo-link { position: absolute; left: 50px; display: flex; align-items: center; gap: 20px; text-decoration: none; color: #ffd700; cursor: pointer; font-size: 1.5rem; }
+        .next-round-link { position: absolute; right: 50px; display: flex; align-items: center; gap: 20px; text-decoration: none; color: #ffd700; cursor: pointer; font-size: 1.5rem; }
+        .team-name-display { color: #56ccf2; font-size: 2.5rem; text-align: center; text-shadow: 0 0 15px rgba(86, 204, 242, 0.5); }
+        
+        .footer { display: flex; justify-content: center; padding: 20px; background: rgba(0,0,0,0.8); border-top: 3px solid #56ccf2; z-index: 10; width: 100%; box-sizing: border-box;}
+        .stat-box { display: flex; flex-direction: column; align-items: center; width: 300px; }
+        .stat-label { font-size: 1.2rem; color: #ccc; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 2px;}
+        .stat-value { font-size: 4.5rem; font-weight: bold; color: #ffd700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.8); line-height: 1; }
+
+        /* ================= KHUNG CÂU HỎI ================= */
+        .main-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; width: 100%; box-sizing: border-box;}
+        .question-box { background: rgba(255, 255, 255, 0.1); border: 2px solid #56ccf2; border-radius: 15px; padding: 50px 40px; width: 85%; max-width: 1200px; font-size: 2rem; line-height: 1.6; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-shadow: 0 0 30px rgba(86, 204, 242, 0.3); backdrop-filter: blur(5px); transition: all 0.3s ease;}
+        
+        .waiting-text { font-style: italic; color: #aaaaaa; font-size: 2.2rem; animation: pulse 2s infinite; }
+        
+        .subject-tag { color: #ffd700; font-size: 2.5rem; margin-bottom: 25px; font-weight: bold; letter-spacing: 2px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); border-bottom: 2px dashed #ffd700; padding-bottom: 10px; display: inline-block;}
+        .question-text-display { font-size: 2.8rem; font-weight: normal; color: white; margin-bottom: 30px; line-height: 1.5; }
+
+        /* Hiệu ứng khi Admin ấn "Mở đáp án" */
+        .ans-opened-box { margin-top: 20px; background: rgba(40, 167, 69, 0.2); border: 3px solid #28a745; padding: 20px 40px; border-radius: 12px; color: #28a745; font-size: 2.5rem; font-weight: bold; text-transform: uppercase; animation: fadeInAns 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 20px rgba(40,167,69,0.5); text-shadow: 0 0 10px #000; }
+
+        @keyframes fadeInAns { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+    </style>
+</head>
+<body>
+    <div class="round-header">
+        <a class="logo-link" onclick="window.location.href='../../'">◀ TRANG CHỦ</a>
+        <!-- Nếu có thiết lập đội thi trên trình duyệt này thì hiện tên đội -->
+        <span class="team-name-display" id="display-team-name">VÒNG 1.1</span>
+        
+        <!-- Nút chuyển sang vòng 2 mới được thêm vào đây -->
+        <a class="next-round-link" onclick="window.location.href='../vong2/'"><span>VÒNG TIẾP THEO ▶</span></a>
+    </div>
+    
+    <div class="main-content">
+        <div class="question-box" id="q-box">
+            <div class="waiting-text">Đang chờ Ban Giám Khảo phát câu hỏi...</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="stat-box">
+            <span class="stat-label">ĐIỂM SỐ HIỆN TẠI</span>
+            <span class="stat-value" id="current-score">0</span>
+        </div>
+    </div>
+
+    <script>
+        const API_VONG1_1 = "../../api/vong1_1.php"; 
+        const SCORE_API = "../../api/diemso.php"; 
+        
+        // Lấy tên đội đang ngồi ở máy này (Nếu setup dùng cho máy tính thí sinh)
+        let myMachineTeam = localStorage.getItem("olympia_team") || "MÀN HÌNH CHUNG";
+        let myTeamKey = localStorage.getItem("olympia_team_key") || ""; 
+        
+        document.getElementById('display-team-name').innerText = myMachineTeam;
+
+        let lastRenderedQuestionId = null;
+        let lastStatusDapAn = null;
+
+        // 1. HÀM ĐỒNG BỘ ĐIỂM SỐ TỪ CSDL (Chỉ chạy nếu có cài đặt Đội)
+        async function fetchMySQLScores() {
+            if (!myTeamKey) return; 
+            try {
+                let dbCol = myTeamKey.charAt(0).toUpperCase() + myTeamKey.slice(1).toLowerCase(); // VD: doi1 -> Doi1
+                const res = await fetch(SCORE_API + "?action=get&_t=" + Date.now()); 
+                const json = await res.json();
+                
+                if (json.status === "success" && json.data && json.data[dbCol] !== undefined) {
+                    document.getElementById('current-score').innerText = json.data[dbCol];
+                }
+            } catch (e) {
+                console.error("Lỗi lấy điểm:", e);
+            } finally {
+                setTimeout(fetchMySQLScores, 1000); 
+            }
+        }
+
+        // 2. HÀM LIÊN TỤC LẮNG NGHE TÍN HIỆU TỪ ADMIN (Polling mỗi 0.5s)
+        async function fetchGameState() {
+            try {
+                const response = await fetch(API_VONG1_1 + "?action=getState&_t=" + Date.now());
+                const data = await response.json();
+                
+                if (data.status === "success") {
+                    let activeId = data.cauhoihientai; // Cột cauhoihientai trong MySQL
+                    let questions = data.danhSachCauHoi || [];
+
+                    // NẾU ADMIN ĐÃ ĐÓNG CÂU HỎI (cauhoihientai bị rỗng)
+                    if (!activeId || activeId === "") {
+                        if (lastRenderedQuestionId !== null) { // Chỉ render lại nếu trạng thái bị thay đổi để tránh giật
+                            document.getElementById('q-box').innerHTML = '<div class="waiting-text">Đang chờ Ban Giám Khảo phát câu hỏi...</div>';
+                            lastRenderedQuestionId = null;
+                            lastStatusDapAn = null;
+                        }
+                    } 
+                    // NẾU ADMIN ẤN PHÁT 1 CÂU HỎI
+                    else {
+                        // Tìm nội dung câu hỏi dựa trên ID mà Admin gửi
+                        let currentQ = questions.find(q => q.sttcau == activeId);
+                        
+                        if (currentQ) {
+                            // Cập nhật lại HTML nếu ID câu hỏi thay đổi HOẶC Admin vừa ấn Mở Đáp Án (statusdapan thay đổi từ 0 lên 1)
+                            if (lastRenderedQuestionId !== activeId || lastStatusDapAn !== currentQ.statusdapan) {
+                                lastRenderedQuestionId = activeId;
+                                lastStatusDapAn = currentQ.statusdapan;
+                                
+                                let html = `<div class="subject-tag">CÂU HỎI SỐ ${currentQ.sttcau}</div>`;
+                                html += `<div class="question-text-display">${currentQ.cauhoi}</div>`;
+                                
+                                // NẾU ADMIN ĐÃ ẤN NÚT "MỞ ĐÁP ÁN" (statusdapan = 1)
+                                if (currentQ.statusdapan == 1) {
+                                    html += `<div class="ans-opened-box">✔ ĐÁP ÁN ĐÃ ĐƯỢC CÔNG BỐ!</div>`;
+                                }
+                                
+                                document.getElementById('q-box').innerHTML = html;
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Lỗi mạng:", error);
+            } finally { 
+                // Cứ 0.5 giây gửi request 1 lần để đảm bảo thao tác của Admin hiện lên ngay lập tức
+                setTimeout(fetchGameState, 500); 
+            }
+        }
+
+        // Khởi động các luồng lặp
+        if (myTeamKey) fetchMySQLScores(); 
+        fetchGameState();
+    </script>
+</body>
+</html>

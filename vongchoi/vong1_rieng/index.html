@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đường Lên Đỉnh Olympia - Khởi Động</title>
+    <style>
+        /* ================= BASE STYLES ================= */
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top, #153280 0%, #061138 50%, #010414 100%); color: white; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; }
+        .active-screen { display: flex; }
+
+        /* ================= HEADER & FOOTER ================= */
+        .round-header { position: relative; padding: 15px 50px; font-size: 2.5rem; font-weight: bold; text-transform: uppercase; color: #ffd700; border-bottom: 3px solid #ffd700; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 50; }
+        .logo-link { position: absolute; left: 50px; display: flex; align-items: center; gap: 20px; text-decoration: none; color: #ffd700; cursor: pointer; }
+        .next-round-link { position: absolute; right: 50px; display: flex; align-items: center; gap: 20px; text-decoration: none; color: #ffd700; cursor: pointer; font-size: 1.5rem; }
+        .team-name-display { color: #56ccf2; font-size: 2.5rem; text-align: center; }
+        
+        .footer { display: flex; justify-content: space-around; padding: 20px; background: rgba(0,0,0,0.8); border-top: 3px solid #56ccf2; z-index: 10; width: 100%; box-sizing: border-box;}
+        .stat-box { display: flex; flex-direction: column; align-items: center; width: 45%; }
+        .stat-label { font-size: 1.2rem; color: #ccc; text-transform: uppercase; margin-bottom: 5px; }
+        .stat-value { font-size: 4rem; font-weight: bold; color: #ffd700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.8); line-height: 1; }
+        .timer { color: #ff416c; text-shadow: 0 0 20px rgba(255, 65, 108, 0.8); }
+
+        /* ================= MAIN CONTENT ================= */
+        .main-content { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 30px; overflow-y: auto; width: 100%; box-sizing: border-box;}
+        .question-box { background: rgba(255, 255, 255, 0.1); border: 2px solid #56ccf2; border-radius: 15px; padding: 30px; width: 85%; max-width: 1000px; font-size: 2rem; line-height: 1.6; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-shadow: 0 0 20px rgba(86, 204, 242, 0.4); box-sizing: border-box; transition: 0.3s;}
+
+        .input-area { width: 100%; display: flex; flex-direction: column; gap: 15px; margin-top: 30px; align-items: center;}
+        .input-area input { font-size: 1.8rem; padding: 15px; border-radius: 8px; border: 3px solid #ffd700; text-align: center; width: 80%; max-width: 500px; outline: none; color: #000; background: #fff; font-weight: bold; box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);}
+        .input-area input:focus { border-color: #56ccf2; box-shadow: 0 0 20px rgba(86, 204, 242, 0.8); }
+        .input-area button { font-size: 1.6rem; padding: 15px; background: #28a745; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; width: 80%; max-width: 500px; color: #fff; transition: 0.2s; box-shadow: 0 4px 10px rgba(40,167,69,0.4);}
+        .input-area button:hover { background: #218838; transform: translateY(-3px); }
+
+        .waiting-text { font-style: italic; color: #aaaaaa; font-size: 2rem; }
+        .subject-tag { color: #ffd700; font-size: 2.2rem; margin-bottom: 20px; font-weight: bold; letter-spacing: 1px; }
+        .question-text-display { font-size: 2.5rem; font-weight: normal; color: white; margin-bottom: 30px; }
+
+        @keyframes fadeInAns { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div id="v1-screen" class="screen active-screen">
+        <div class="round-header">
+            <a class="logo-link" onclick="window.open('../../')"><span>◀ TRANG CHỦ</span></a>
+            <span class="team-name-display" id="display-team-name-v1">ĐANG TẢI...</span>
+            
+            <!-- Nút chuyển sang vòng 1_1 mới được thêm vào đây -->
+            <a class="next-round-link" onclick="window.location.href='../vong1_1/'"><span>VÒNG TIẾP THEO ▶</span></a>
+        </div>
+        
+        <div class="main-content">
+            <div class="question-box" id="q-box-v1" style="width: 98%;">
+                <div class="waiting-text">Đang chờ Ban Giám Khảo phát câu hỏi...</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="stat-box"><span class="stat-label">ĐIỂM SỐ</span><span class="stat-value" id="current-score-v1">0</span></div>
+            <div class="stat-box"><span class="stat-label">THỜI GIAN</span><span class="stat-value timer" id="time-left-v1">60.0</span></div>
+        </div>
+    </div>
+
+    <script type="module">
+        const API_VONG1 = "../../api/vong1.php"; 
+        
+        let myMachineTeam = localStorage.getItem("olympia_team");
+        let myTeamKey = localStorage.getItem("olympia_team_key") || ""; 
+
+        let endTimeTimestampV1 = null;
+        let frozenTimeLeftV1 = null; 
+        let v1RoundStarted = false; 
+        let currentServerQId = "";  
+        
+        // Trạng thái giữ delay (trì hoãn animation)
+        let isRandomDelaying = false; 
+        
+        let myAnswersV1 = ["", "", "", "", "", ""]; 
+        let myQuestionsV1 = [];
+        window.globalShowAnswer = false; 
+
+        // 1. ĐỌC ĐIỂM TỪ MYSQL
+        async function fetchMySQLScores() {
+            if (!myMachineTeam || !myTeamKey) return;
+            try {
+                let dbCol = myTeamKey.charAt(0).toUpperCase() + myTeamKey.slice(1).toLowerCase();
+                const res = await fetch("../../api/diemso.php?action=get&_t=" + Date.now()); 
+                if (!res.ok) throw new Error(`HTTP Error!`);
+                const json = await res.json();
+                if (json.status === "success" && json.data) {
+                    let newScore = json.data[dbCol];
+                    if (newScore !== undefined && newScore !== null) {
+                        document.getElementById('current-score-v1').innerText = newScore;
+                    }
+                }
+            } catch (e) {
+                console.error("[Score Sync] Lỗi:", e);
+            } finally {
+                setTimeout(fetchMySQLScores, 500); 
+            }
+        }
+
+        window.onload = function() {
+            if (myMachineTeam) {
+                document.getElementById('display-team-name-v1').innerText = myMachineTeam;
+                fetchGameStateV1();   
+                fetchMySQLScores(); 
+                setInterval(updateTimer, 50); 
+            } else {
+                window.location.href = 'index.html';
+            }
+        };
+
+        // 2. XỬ LÝ ĐỒNG HỒ ĐẾM NGƯỢC
+        function updateTimer() {
+            const now = new Date().getTime();
+            
+            // XỬ LÝ ĐÓNG BĂNG ĐỒNG HỒ TẠI ĐÂY
+            if(frozenTimeLeftV1 !== null) { 
+                document.getElementById('time-left-v1').innerText = frozenTimeLeftV1; 
+                return; 
+            }
+            
+            if(!endTimeTimestampV1) { 
+                document.getElementById('time-left-v1').innerText = "60.0"; 
+                return; 
+            }
+            
+            const dist = endTimeTimestampV1 - now;
+            if (dist <= 0) {
+                document.getElementById('time-left-v1').innerText = "0.0";
+                if(v1RoundStarted) {
+                    submitCurrentQuestion(); // Hết giờ tự nộp câu hiện tại
+                }
+            } else {
+                document.getElementById('time-left-v1').innerText = (dist / 1000).toFixed(1);
+            }
+        }
+
+        // 3. HIỂN THỊ CÂU HỎI
+        function renderCurrentQV1(qIndex) {
+            const qBox = document.getElementById('q-box-v1');
+            let q = myQuestionsV1[qIndex];
+            
+            if(!q) return;
+
+            let ansDisplay = (window.globalShowAnswer === true) ? '<div id="correct-ans-display-v1" style="margin-top: 15px; background: #e8f5e9; border-left: 4px solid #28a745; padding: 12px 15px; border-radius: 8px; color: #155724; font-size: 1.5rem; font-weight: bold; width: 80%; max-width: 400px; text-align: left; animation: fadeInAns 0.3s;"><span style="color:#28a745; margin-right: 8px;">✔</span> Đáp án chuẩn: <span style="color:#000;">' + q.dapAn + '</span></div>' : "";
+
+            let qHtml = '<div class="subject-tag">[ CÂU ' + (qIndex + 1) + '/6 ] - ' + q.linhVuc + '</div>';
+            qHtml += '<div class="question-text-display">' + q.noiDung + '</div>';
+            
+            qHtml += '<div class="input-area">';
+            qHtml += '<input type="text" id="my-answer-input-v1" placeholder="Nhập đáp án của bạn..." autocomplete="off">';
+            qHtml += `<button id="btn-submit-v1" onclick="submitCurrentQuestion()">GỬI ĐÁP ÁN (Hoặc nhấn Enter)</button>`;
+            qHtml += ansDisplay;
+            qHtml += '</div>';
+
+            qBox.innerHTML = qHtml;
+            
+            let inputEl = document.getElementById('my-answer-input-v1');
+            if(inputEl) {
+                inputEl.focus();
+                inputEl.addEventListener('keypress', function(event) {
+                    if(event.key === 'Enter') submitCurrentQuestion();
+                });
+            }
+        }
+
+        // 4. LƯU ĐÁP ÁN VÀ ĐÓNG BĂNG ĐỒNG HỒ
+        window.submitCurrentQuestion = function() {
+            if(!v1RoundStarted) return;
+            v1RoundStarted = false; // Ngăn nộp 2 lần
+
+            // --- ĐÓNG BĂNG ĐỒNG HỒ ---
+            frozenTimeLeftV1 = document.getElementById('time-left-v1').innerText;
+
+            const ansInput = document.getElementById('my-answer-input-v1');
+            let ans = ansInput ? ansInput.value.trim() : "Bỏ qua";
+            if(ans === "") ans = "Bỏ qua";
+
+            let qIdx = myQuestionsV1.findIndex(q => q.id === currentServerQId);
+            if (qIdx !== -1) {
+                myAnswersV1[qIdx] = ans;
+            }
+
+            let localAnswerV1 = myAnswersV1.map((a, i) => 'C' + (i+1) + ': ' + (a !== "" ? a : '...')).join(" | ");
+
+            document.getElementById('q-box-v1').innerHTML = `<div class="waiting-text" style="color:#56ccf2; font-size:2.5rem; font-weight:bold;">ĐÃ GHI NHẬN ĐÁP ÁN!<br><span style="font-size:1.5rem; color:#ccc; display:inline-block; margin-top:15px; font-weight:normal;">Đang chờ MC phát câu tiếp theo...</span></div>`;
+            
+            fetch(`${API_VONG1}?action=submitAnswer&team=${encodeURIComponent(myMachineTeam)}&answer=${encodeURIComponent(localAnswerV1)}&time=Đang thi`)
+                .catch(err => console.error("Lỗi:", err));
+        }
+
+        // 5. HIỂN THỊ TỔNG KẾT SAU KHI MC CHẤM XONG (CHỈ QUÉT ĐÚNG SỐ CÂU CỦA GÓI)
+        function showSummaryV1(answerStr) {
+            let cleanAnsStr = answerStr.split("(MC Chấm)").join("").trim();
+            let submittedArr = cleanAnsStr.split("|");
+            
+            let summaryHtml = '<div class="subject-tag" style="color:#56ccf2; border:none; margin-bottom: 30px; text-shadow: 0 0 10px #56ccf2;">BẢNG ĐIỂM TỔNG KẾT</div>';
+            summaryHtml += '<div style="display:flex; flex-direction:column; gap:15px; width:100%; text-align:left;">';
+            
+            // QUÉT ĐÚNG SỐ LƯỢNG CÂU HỎI TRONG GÓI
+            myQuestionsV1.forEach((q, idx) => {
+                let part = submittedArr[idx] || "";
+                let rawAns = part.trim();
+                
+                let displayResult = ""; let colorResult = "#ffd700";
+                let lowerRawAns = rawAns.toLowerCase();
+
+                if (lowerRawAns.match(/c\d+:\s*\d+/)) {
+                    let scoreVal = lowerRawAns.split(":")[1].trim();
+                    if (scoreVal === "10") { displayResult = "✔ Đúng (+10đ)"; colorResult = "#28a745"; }
+                    else if (scoreVal === "0") { displayResult = "✘ Sai (0đ)"; colorResult = "#dc3545"; }
+                    else if (scoreVal === "1") { displayResult = "➖ Bỏ qua (0đ)"; colorResult = "#6c757d"; }
+                } else {
+                    let splitIdx = rawAns.indexOf(":");
+                    displayResult = splitIdx > -1 ? rawAns.substring(splitIdx + 1).trim() : rawAns;
+                    if(displayResult === "" || displayResult.toLowerCase().includes("bỏ qua") || displayResult === "...") {
+                        displayResult = "➖ Bỏ qua (0đ)";
+                        colorResult = "#6c757d";
+                    }
+                }
+
+                summaryHtml += '<div style="background: rgba(0, 0, 0, 0.4); border: 1px solid #56ccf2; border-radius: 8px; padding: 20px;">';
+                summaryHtml += '<div style="color: #ffd700; font-weight: bold; font-size: 1.4rem; margin-bottom: 10px; text-transform: uppercase;">CÂU ' + (idx+1) + ' - ' + q.linhVuc + '</div>';
+                summaryHtml += '<div style="color: #fff; font-size: 1.2rem; margin-bottom: 15px;">' + q.noiDung + '</div>';
+                
+                // HIỆN KẾT QUẢ THÍ SINH
+                summaryHtml += '<div style="color: #ccc; font-size: 1.1rem; margin-bottom: 5px;">Kết quả Thí Sinh: <span style="color:' + colorResult + '; font-weight:bold;">' + displayResult + '</span></div>';
+                
+                summaryHtml += '<div style="color: #ccc; font-size: 1.1rem;">Đáp án chuẩn: <span style="color:#28a745; font-weight:bold;">' + q.dapAn + '</span></div>';
+                summaryHtml += '</div>';
+            });
+            summaryHtml += '</div>';
+            document.getElementById('q-box-v1').innerHTML = summaryHtml;
+        }
+
+        // 6. LẮNG NGHE TÍN HIỆU TỪ ADMIN LIÊN TỤC
+        async function fetchGameStateV1() {
+            if(!myMachineTeam) return; 
+            try {
+                const response = await fetch(API_VONG1 + "?action=getState&_t=" + new Date().getTime());
+                const data = await response.json();
+                
+                if(data.status === "success") {
+                    let incomingId = data.cauHoiHienTai || "";
+                    let incomingKey = data.doiHienTai || "";
+                    window.globalShowAnswer = (data.showAnswer === true || data.showAnswer === "true");
+
+                    let activePackageKey = incomingKey.indexOf("|") !== -1 ? incomingKey.split("|")[1] : incomingKey;
+
+                    if (activePackageKey && data[activePackageKey]) {
+                        myQuestionsV1 = data[activePackageKey]; 
+                    }
+
+                    let isMyTurn = incomingKey.indexOf(myMachineTeam + "|") === 0;
+
+                    // TRƯỜNG HỢP ADMIN BỐC GÓI NGẪU NHIÊN (CÓ TRÌ HOÃN DELAY 2s)
+                    if (isMyTurn && incomingId === "RANDOM") {
+                        if (currentServerQId !== "RANDOM" && !isRandomDelaying) {
+                            isRandomDelaying = true; // Bật cờ Delay
+                            document.getElementById('q-box-v1').innerHTML = `<div class="waiting-text" style="color:#f2c94c;">Ban Giám Khảo đang chọn gói câu hỏi...</div>`;
+                            
+                            // Tạo Delay 2 Giây
+                            setTimeout(() => {
+                                myAnswersV1 = ["", "", "", "", "", ""]; 
+                                currentServerQId = "RANDOM"; 
+                                endTimeTimestampV1 = null; 
+                                frozenTimeLeftV1 = null; 
+
+                                let prettyPkgName = activePackageKey.toUpperCase().replace("GOI", "GÓI ");
+                                document.getElementById('q-box-v1').innerHTML = `
+                                    <div class="waiting-text" style="color:#28a745; font-size:3.5rem; font-weight:bold; text-transform:uppercase;">CHÚC MỪNG!</div>
+                                    <div style="font-size:2.2rem; margin-top:20px; color:#fff;">Đội bạn đã TRÚNG VÀO: <span style="color:#ffd700; font-weight:bold; font-size: 3rem;">${prettyPkgName}</span></div>
+                                    <div style="font-size:1.5rem; margin-top:30px; color:#ccc; font-style:italic;">Vui lòng chờ MC phát câu hỏi đầu tiên...</div>
+                                `;
+                                isRandomDelaying = false; // Tắt cờ delay
+                            }, 2000);
+                        }
+                    } 
+                    // BỎ QUA NẾU ĐANG DELAY
+                    else if (isRandomDelaying) {
+                        return;
+                    }
+                    // ĐANG THI - ADMIN CHUYỂN CÂU
+                    else if (isMyTurn && incomingId !== "" && incomingId !== "KET_THUC" && incomingId !== "RESET_PKG" && incomingId !== "PREPARE" && incomingId !== "RANDOM") {
+                        let foundIdx = myQuestionsV1.findIndex(q => q.id == incomingId);
+                        
+                        // Kích hoạt bộ đếm 60s trên Local khi câu hỏi đổi mới
+                        if (foundIdx !== -1 && currentServerQId !== incomingId) {
+                            currentServerQId = incomingId;
+                            v1RoundStarted = true; 
+                            
+                            frozenTimeLeftV1 = null; // Gỡ đóng băng thời gian
+                            endTimeTimestampV1 = new Date().getTime() + 60000;
+                            
+                            renderCurrentQV1(foundIdx);
+                        }
+                    } 
+                    // MC KHÔNG PHÁT GÌ CHO MÌNH
+                    else if (!isMyTurn && incomingId !== "RESET_PKG" && incomingId !== "Vong1") {
+                        let activeTeamName = incomingKey.split("|")[0] || "";
+                        if(activeTeamName) {
+                            document.getElementById('q-box-v1').innerHTML = '<div class="waiting-text" style="color:#56ccf2;">Đang theo dõi phần thi của đội: <br><strong style="color:#ffd700; font-size:3rem;">' + activeTeamName + '</strong></div>';
+                        }
+                    } 
+                    // LÀM MỚI
+                    else if (incomingId === "RESET_PKG" || incomingId === "Vong1") {
+                        v1RoundStarted = false;
+                        endTimeTimestampV1 = null;
+                        frozenTimeLeftV1 = null;
+                        currentServerQId = ""; 
+                        isRandomDelaying = false;
+                        document.getElementById('q-box-v1').innerHTML = '<div class="waiting-text">Đang chờ Ban Giám Khảo...</div>';
+                    }
+
+                    // TỔNG KẾT SAU KHI MC CHẤM BÀI
+                    let mySub = (data.submittedAnswers && data.submittedAnswers[myMachineTeam]) ? data.submittedAnswers[myMachineTeam] : null;
+                    if (mySub && mySub.answer && mySub.answer.includes("MC Chấm")) {
+                        showSummaryV1(mySub.answer);
+                    }
+                }
+            } catch (error) {
+                console.error("Lỗi mạng:", error);
+            } finally { 
+                setTimeout(fetchGameStateV1, 500); 
+            }
+        }
+    </script>
+</body>
+</html>
