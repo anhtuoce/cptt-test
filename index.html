@@ -167,6 +167,7 @@
     <script>
         // --- API URLS ---
         const API_URL = "https://script.google.com/macros/s/AKfycbxZqLJ3h3NWPjbc_GvQgoEMUqM8jorcorpHfnzXjP7at4uXLrNl_3tZ81zB6JCyenIP/exec"; 
+        const FIREBASE_DIEMSO_URL = "https://cnpt-test-default-rtdb.firebaseio.com/diemso.json";
         
         let myMachineTeam = localStorage.getItem("olympia_team");
         let myTeamKey = localStorage.getItem("olympia_team_key") || ""; 
@@ -216,25 +217,31 @@
            window.open("vongchoi/vong4", "_blank");
         }
 
-        // KẾT NỐI API MySQL LẤY TÊN ĐỘI
+        // KẾT NỐI FIREBASE REALTIME DATABASE LẤY TÊN ĐỘI
         async function fetchTeams() {
             try {
-                // Gọi tới api chondoi.php thay vì Google Sheets
-                const res = await fetch("api/chondoi.php");
+                const res = await fetch(FIREBASE_DIEMSO_URL);
+                if (!res.ok) throw new Error("HTTP error " + res.status);
                 const data = await res.json();
                 
-                if(data.status === "success") {
-                    const select = document.getElementById('init-team-select');
+                const select = document.getElementById('init-team-select');
+                if (data && typeof data === "object") {
                     select.innerHTML = '<option value="">-- CHỌN ĐỘI CHO MÁY NÀY --</option>';
                     
-                    data.data.forEach(team => {
-                        // team.tendoi là tên hiển thị (Đội 1, Đội 2...), team.doi là mã (doi1, doi2...)
-                        select.innerHTML += `<option value="${team.tendoi}" data-key="${team.doi}">${team.tendoi}</option>`;
+                    // Lấy các mã đội (doi1, doi2, doi3, doi4...) và sắp xếp đúng thứ tự
+                    Object.keys(data).sort().forEach(doiKey => {
+                        const team = data[doiKey];
+                        if (team && team.tendoi) {
+                            // team.tendoi là tên hiển thị (Đội 1, Đội 2...), doiKey là mã (doi1, doi2...)
+                            select.innerHTML += `<option value="${team.tendoi}" data-key="${doiKey}">${team.tendoi}</option>`;
+                        }
                     });
+                } else {
+                    select.innerHTML = '<option value="">Không có dữ liệu đội!</option>';
                 }
             } catch(e) { 
-                console.error("Lỗi lấy danh sách đội từ MySQL:", e); 
-                document.getElementById('init-team-select').innerHTML = '<option value="">Lỗi kết nối CSDL!</option>';
+                console.error("Lỗi lấy danh sách đội từ Firebase:", e); 
+                document.getElementById('init-team-select').innerHTML = '<option value="">Lỗi kết nối Firebase!</option>';
             }
         }
 
